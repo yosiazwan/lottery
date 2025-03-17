@@ -1,9 +1,27 @@
 'use client';
 import { useEffect, useState } from "react";
+import { Peserta } from "./counter";
 
-export default function TablePeserta({ setPesertaData }: { setPesertaData: (data: { id: string; name: string }[]) => void }) {
+const shuffleArray = <T,>(array: T[]): T[] => {
+	let shuffled = [...array]; // Copy array agar tidak merubah aslinya
+	for (let i = shuffled.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+	}
+	return shuffled;
+};
+
+const getRandomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+export default function TablePeserta({
+	setPesertaData,
+	pesertaData
+}: {
+	setPesertaData: (data: Peserta[]) => void,
+	pesertaData: Peserta[]
+}) {
 	const [csvData, setCsvData] = useState("");
-	const [tableData, setTableData] = useState<{ id: string; name: string }[]>([]);
+	const [tableData, setTableData] = useState<Peserta[]>([]);
 
 	const handleCsvInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
 		setCsvData(event.target.value);
@@ -15,9 +33,18 @@ export default function TablePeserta({ setPesertaData }: { setPesertaData: (data
 			const [id, name] = row.split(",").map(item => item.replace(/"/g, ""));
 			return { id, name };
 		});
-		localStorage.setItem("doorprize.peserta", JSON.stringify(jsonData));
-		setTableData(jsonData);
-		setPesertaData(jsonData); // Update the parent component with the new data
+		acakData(jsonData);
+	};
+
+	const acakData = (data: any) => {
+		let newData = data;
+
+		for(let i=0; i < getRandomInt(5, 15); i++) {
+			newData = shuffleArray(newData);
+		}
+		// setTableData(shuffleArray(tableData));
+		localStorage.setItem("doorprize.peserta", JSON.stringify(newData));
+		setPesertaData(newData);
 	};
 
 	const clearLocalStorage = () => {
@@ -52,15 +79,21 @@ export default function TablePeserta({ setPesertaData }: { setPesertaData: (data
 				/>
 				<button
 					onClick={saveToLocalStorage}
-					className="mt-2 mr-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					className="px-4 py-2 hover:cursor-pointer bg-blue-500 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>
 					Save Data
 				</button>
 				<button
 					onClick={clearLocalStorage}
-					className="mt-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+					className="ml-2 px-4 py-2 hover: cursor-pointer bg-red-500 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
 				>
 					Clear Data
+				</button>
+				<button
+					onClick={() => { acakData(pesertaData); }}
+					className="ml-2 px-4 py-2 hover: cursor-pointer bg-purple-500 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+				>
+					Acak Data
 				</button>
 			</div>
 			<div className="mt-4 h-150 overflow-y-auto">
@@ -73,7 +106,7 @@ export default function TablePeserta({ setPesertaData }: { setPesertaData: (data
 						</tr>
 					</thead>
 					<tbody className="bg-gray-500 divide-y divide-gray-700">
-						{tableData.map((peserta: { id: string, name: string }, index: number) => (
+						{pesertaData.map((peserta: { id: string, name: string }, index: number) => (
 							<tr key={index}>
 								<td className="px-2 py-2 whitespace-nowrap text-sm text-gray-100">{index + 1}</td>
 								<td className="px-2 py-2 whitespace-nowrap text-sm text-gray-100">{peserta.id}</td>

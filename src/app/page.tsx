@@ -16,7 +16,7 @@ export default function Home() {
     <div className="grid grid-cols-12 gap-0 h-screen p-0">
       <aside className="col-span-3 p-0">
         <div className="w-full h-screen bg-neutral-950 p-4">
-          <TablePeserta setPesertaData={setPesertaData} /> {/* Pass the function to update peserta data */}
+          <TablePeserta setPesertaData={setPesertaData} pesertaData={pesertaData} /> {/* Pass the function to update peserta data */}
         </div>
       </aside>
 
