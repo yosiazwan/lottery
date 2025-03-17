@@ -10,6 +10,7 @@ export default function Home() {
   const [rightSidebar, setRightSidebar] = useState<boolean>(true);
   const [pesertaData, setPesertaData] = useState<Peserta[]>([]); // Define state for peserta data
   const [winnersData, setWinnersData] = useState<Winners[]>([]); // Define state for winners data
+  const [dropWinnersData, setDropWinnersData] = useState<Winners[]>([]); // Define state for drop winners data
 
   return (
     <div className="grid grid-cols-12 gap-0 h-screen p-0">
@@ -21,12 +22,12 @@ export default function Home() {
 
       <main className="col-span-5 shadow-md bg-black">
         <div>
-          <Counter pesertaData={pesertaData} setWinnersData={setWinnersData} /> {/* Pass peserta data as props */}
+          <Counter pesertaData={pesertaData} setWinnersData={setWinnersData} setDropWinnersData={setDropWinnersData} /> {/* Pass peserta data as props */}
         </div>
       </main>
 
       <aside className="col-span-4 bg-neutral-950 p-4">
-        <TableWinner winnersData={winnersData} setPesertaData={setPesertaData} pesertaData={pesertaData} />
+        <TableWinner winnersData={winnersData} dropWinnersData={dropWinnersData} setPesertaData={setPesertaData} pesertaData={pesertaData} />
       </aside>
     </div>
   );

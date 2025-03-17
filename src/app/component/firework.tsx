@@ -1,6 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
+import { Peserta, Winners } from "./counter";
+import { Dancing_Script } from "next/font/google";
+
+const gFont = Dancing_Script({ subsets: ["latin"] });
 
 class Firework {
 	x: number;
@@ -70,7 +74,7 @@ class Particle {
 	}
 }
 
-export default function Fireworks({ isOpen }: { isOpen: boolean }) {
+export default function Fireworks({ isOpen, winner, reload }: { isOpen: boolean, winner: Peserta, reload: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isRunning, setIsRunning] = useState<boolean>(isOpen);
   let intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -123,15 +127,55 @@ export default function Fireworks({ isOpen }: { isOpen: boolean }) {
     };
   }, [isRunning]);
 
+	const saveWinner = () => {
+		const winners = localStorage.getItem('doorprize.winners');
+		const winnersData = winners ? JSON.parse(winners) as Winners[] : [];
+		winnersData.push({ ...winner, timestamp: Date.now() });
+		localStorage.setItem('doorprize.winners', JSON.stringify(winnersData));
+		setOpen(false);
+		reload();
+	}
+
+	const dumpWinner = () => {
+		const dropWinners = localStorage.getItem('doorprize.drop-winners');
+		const dropWinnersData = dropWinners ? JSON.parse(dropWinners) as Winners[] : [];
+		dropWinnersData.push({ ...winner, timestamp: Date.now() });
+		localStorage.setItem('doorprize.drop-winners', JSON.stringify(dropWinnersData));
+		setOpen(false);
+		reload();
+	}
+
   return (
-    <div className={!open ? "hidden" : ""}>
-      <button
-        onClick={() => setOpen(false)}
-        className="absolute top-4 left-4 px-4 py-2 bg-white text-black rounded-lg shadow-lg z-10"
-      >
-        {isRunning ? "Stop" : "Start"} Close
-      </button>
-      <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full bg-black" />
-    </div>
+		<>
+			<div className={`${!open ? "hidden" : ""} overflow-hidden flex items-center justify-center h-screen`}>
+				<div className="absolute top-0 flex flex-col items-center justify-center z-10 w-full h-full">
+					<span className="text-9xl">🎉</span>
+					<div className={`${gFont.className} text-8xl mt-5 mb-5 font-bold text-yellow-300`}>Selamat Kepada</div>
+					<div className="shadow-lg mt-5 text-center border-2 border-dashed px-25 py-15 rounded-4xl border-yellow-300 mb-15">
+						<div className="text-6xl font-bold mb-1 text-white-300">{winner.name}</div>
+						<div className="text-4xl text-white-500">{winner.id}</div>
+					</div>
+					<div className="flex flex-row gap-25">
+						<button
+							onClick={() => {
+								if (confirm("Apakah Anda yakin ingin menggugurkan pemenang ini?")) {
+									dumpWinner();
+								}
+							}}
+							className="p-4 px-10 bg-red-700 text-white rounded-lg shadow-lg"
+						>
+							Gugur
+						</button>
+						<button
+							onClick={saveWinner}
+							className="p-4 px-10 bg-green-700 text-white rounded-lg shadow-lg"
+						>
+							Simpan
+						</button>
+					</div>
+				</div>
+				<canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full bg-black" />
+			</div>
+		</>
   );
 }
