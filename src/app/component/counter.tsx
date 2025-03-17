@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import Fireworks from "./firework";
 
-type Peserta = {
+export type Peserta = {
 	id: string;
 	name: string;
 };
@@ -13,52 +14,45 @@ function getSafeRandomIndex(max: number) {
 	return array[0] % max;
 }
 
-export default function Counter() {
+export type Winners = {
+	id: string;
+	name: string;
+	timestamp: number;
+}
+
+export default function Counter({ pesertaData, setWinnersData }: { pesertaData: Peserta[], setWinnersData: (data: Winners[]) => void }) {
 	const intervalTime = 10;
 	const [randomPeserta, setRandomPeserta] = useState<Peserta>({ id: '', name: '' });
 	const [isRun, setIsRun] = useState(false);
-	const [peserta, setPeserta] = useState<Peserta[]>([]);
+	const [peserta, setPeserta] = useState<Peserta[]>(pesertaData);
 	const [random, setRandom] = useState<NodeJS.Timeout | null>(null);
 	const [time, setTime] = useState<number>(0);
+	const [showFramework, setShowFramework] = useState<boolean>(false);
 
-	const fetchData = async () => {
-		const localStoragePeserta = localStorage.getItem('doorprize.peserta');
-		if (localStoragePeserta) {
-			setPeserta(localStoragePeserta ? JSON.parse(localStoragePeserta) : []);
+	useEffect(() => {
+		setPeserta(pesertaData);
+		const winners = localStorage.getItem('doorprize.winners');
+		if (winners) {
+			const parsedWinners = JSON.parse(winners) as Winners[];
+			const pesertaIds = parsedWinners.map(winner => winner.id);
+			setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
 		}
-	};
+	}, [pesertaData]);
 
 	useEffect(() => {
 		if (isRun) {
+			setRandom(null);
+			if (peserta.length === 0) {
+				setIsRun(false);
+				alert('Tidak ada peserta');
+				return;
+			}
+
 			setRandom(setInterval(() => {
 				const randomIndex = getSafeRandomIndex(peserta.length);
 				setRandomPeserta(peserta[randomIndex]);
 			}, intervalTime));
-		} else {
-			setPeserta(prev => prev.filter(peserta => peserta.id !== randomPeserta.id));
-			clearInterval(random as NodeJS.Timeout);
-			setRandom(null);
-		}
-	}, [isRun]);
 
-	useEffect(() => {
-		fetchData();
-
-		const handleStorageChange = (event: StorageEvent) => {
-			if (event.key === 'doorprize.peserta') {
-				setPeserta(event.newValue ? JSON.parse(event.newValue) : []);
-			}
-		};
-
-		window.addEventListener('storage', handleStorageChange);
-
-		return () => {
-			window.removeEventListener('storage', handleStorageChange);
-		};
-	}, []);
-
-	useEffect(() => {
-		if (isRun) {
 			setTime(0);
 			const timer = setInterval(() => {
 				setTime(prev => prev + intervalTime);
@@ -67,26 +61,56 @@ export default function Counter() {
 			return () => {
 				clearInterval(timer);
 			};
+		} else {
+			setPeserta(prev => prev.filter(peserta => peserta.id !== randomPeserta.id));
+			clearInterval(random as NodeJS.Timeout);
+			setShowFramework(true);
+
+			const winners = localStorage.getItem('doorprize.winners');
+			if (time > 0) {
+				if (winners) {
+					const parsedWinners = JSON.parse(winners) as Winners[];
+					const newWinners = [...parsedWinners, { id: randomPeserta.id, name: randomPeserta.name, timestamp: Date.now() }];
+					localStorage.setItem('doorprize.winners', JSON.stringify(newWinners));
+					setWinnersData(newWinners);
+				} else {
+					const newWinners = [{ id: randomPeserta.id, name: randomPeserta.name, timestamp: Date.now() }];
+					localStorage.setItem('doorprize.winners', JSON.stringify(newWinners));
+					setWinnersData(newWinners);
+				}
+			}
 		}
 	}, [isRun]);
 
 	return (
-		<div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-			<main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start w-full">
-				<div className="w-full text-center">Jumlah Peserta: <b>{peserta.length}</b> Orang</div>
-				<div className="w-full text-center">({randomPeserta.id}) {randomPeserta.name}</div>
+		<div className="grid items-center justify-items-center min-h-screen p-0 m-0">
+			<div>
+				<h1 className="text-6xl font-bold text-yellow-300 flex items-center">
+					<span className="mr-2">🎁</span> DoorPrize
+				</h1>
+				<div className="w-full text-center mt-10 text-4xl">Sisa Peserta: <b>{peserta.length}</b></div>
+			</div>
+			<main className="w-full">
+				<div className="w-full text-center">
+					<div className="text-xl">ID:</div>
+					<div className="text-5xl font-bold">{randomPeserta.id}</div>
+					<div className="mt-5 text-xl">Nama:</div>
+					<div className="text-5xl font-bold">{randomPeserta.name}</div>
+				</div>
+			</main>
+			<footer>
+				<div className="flex justify-center w-full mb-5 text-xl">
+					Play Time : <b className="mx-2 text-2xl"> {(time / 1000).toFixed(2)} </b> Detik
+				</div>
 				<div className="flex justify-center w-full">
-					<button onClick={() => setIsRun(!isRun)} className={`bg-blue-300 px-4 py-2 text-black rounded-md w-fit ${isRun && ((time / 1000) < 5) ? 'hidden' : ''}`}>
+					<button
+						onClick={() => setIsRun(!isRun)}
+						className={`${isRun ? `bg-red-500` : `bg-blue-500`} px-18 hover: cursor-pointer py-4 text-white text-4xl font-bold rounded-full w-fit ${isRun && ((time / 1000) < 5) ? 'hidden' : ''}`}>
 						{isRun ? "Stop" : "Start"}
 					</button>
 				</div>
-				<div className="flex justify-center w-full">
-					{(time / 1000).toFixed(2)} Detik
-				</div>
-			</main>
-			<footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-				<button onClick={fetchData} className="bg-blue-300 px-4 py-2 text-black rounded-md w-fit">Refresh</button>
 			</footer>
+			{!isRun && time > 0 && <Fireworks isOpen={showFramework} /> }
 		</div>
 	);
 }

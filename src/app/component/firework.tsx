@@ -70,11 +70,12 @@ class Particle {
 	}
 }
 
-export default function Fireworks() {
+export default function Fireworks({ isOpen }: { isOpen: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [isRunning, setIsRunning] = useState<boolean>(isOpen);
   let intervalRef = useRef<NodeJS.Timeout | null>(null);
   let fireworks = useRef<Firework[]>([]);
+	const [open, setOpen] = useState<boolean>(isOpen);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -84,8 +85,6 @@ export default function Fireworks() {
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
-
 
     function animate() {
       if (!ctx || !canvas) return;
@@ -125,12 +124,12 @@ export default function Fireworks() {
   }, [isRunning]);
 
   return (
-    <div>
+    <div className={!open ? "hidden" : ""}>
       <button
-        onClick={() => setIsRunning((prev) => !prev)}
+        onClick={() => setOpen(false)}
         className="absolute top-4 left-4 px-4 py-2 bg-white text-black rounded-lg shadow-lg z-10"
       >
-        {isRunning ? "Stop" : "Start"} Fireworks
+        {isRunning ? "Stop" : "Start"} Close
       </button>
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full bg-black" />
     </div>
