@@ -34,9 +34,15 @@ export default function TableWinner({
 
 	const deleteWinner = (index: number) => {
 		if (confirm('Are you sure you want to delete this winner?')) {
+			const winnerToDrop = winners[index];
 			const updatedWinners = winners.filter((_, i) => i !== index);
 			setWinners(updatedWinners);
 			localStorage.setItem('doorprize.winners', JSON.stringify(updatedWinners));
+
+			const updatedDropWinners = [...dropWinners, winnerToDrop];
+			setDropWinners(updatedDropWinners);
+			localStorage.setItem('doorprize.drop-winners', JSON.stringify(updatedDropWinners));
+
 			window.location.reload();
 		}
 	}
