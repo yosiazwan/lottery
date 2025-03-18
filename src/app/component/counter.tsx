@@ -122,8 +122,8 @@ export default function Counter({
                 </div>
             </main>
             <footer>
-                <div className="flex justify-center w-full mb-5 text-xl">
-                    Play Time : <b className="mx-2 text-2xl"> {(time / 1000).toFixed(2)} </b> Detik
+                <div className="flex justify-center w-full mb-5 text-xl text-white">
+                    Play Time : <b className="mx-2 text-2xl text-white"> {(time / 1000).toFixed(2)} </b> Detik
                 </div>
                 <div className="flex justify-center w-full">
                     <button
