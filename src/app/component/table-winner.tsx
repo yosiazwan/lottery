@@ -33,11 +33,12 @@ export default function TableWinner({
 	}
 
 	const downloadCSV = () => {
-		const headers = ['Lot', 'NIK', 'Nama', 'Draw Time'];
+		const headers = ['Lot', 'NIK', 'Nama', 'Prize', 'Draw Date', 'Draw Time'];
 		const rows = winners.map((peserta, index) => [
 			`#${index + 1}`,
 			peserta.id,
 			peserta.name,
+			peserta.prize,
 			new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 		]);
 
@@ -58,11 +59,12 @@ export default function TableWinner({
 	}
 
 	const downloadCSV2 = () => {
-		const headers = ['Lot', 'NIK', 'Nama', 'Draw Time'];
+		const headers = ['Lot', 'NIK', 'Nama', 'Prize', 'Draw Date', 'Draw Time'];
 		const rows = dropWinners.map((peserta, index) => [
 			`#${index + 1}`,
 			peserta.id,
 			peserta.name,
+			peserta.prize,
 			new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 		]);
 
@@ -115,7 +117,7 @@ export default function TableWinner({
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Lot</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">NIK</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Nama</th>
-								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Draw Time</th>
+								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Prize</th>
 							</tr>
 						</thead>
 						<tbody className="bg-gray-700 divide-y divide-gray-700">
@@ -124,9 +126,10 @@ export default function TableWinner({
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">#{index + 1}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.id}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.name}</td>
-									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">
+									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.prize}</td>
+									{/* <td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">
 										{new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-									</td>
+									</td> */}
 								</tr>
 							))}
 						</tbody>
@@ -148,7 +151,7 @@ export default function TableWinner({
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">No.</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">NIK</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Nama</th>
-								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Draw Time</th>
+								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Prize</th>
 							</tr>
 						</thead>
 						<tbody className="bg-gray-700 divide-y divide-gray-700">
@@ -157,9 +160,10 @@ export default function TableWinner({
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">#{index + 1}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.id}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.name}</td>
-									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">
+									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.prize}</td>
+									{/* <td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">
 										{new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-									</td>
+									</td> */}
 								</tr>
 							))}
 						</tbody>

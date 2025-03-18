@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Fireworks from "./firework";
+import Link from "next/link";
+import { Prize } from "../hadiah/page";
 
 export type Peserta = {
     id: string;
@@ -18,6 +20,7 @@ export type Winners = {
     id: string;
     name: string;
     timestamp: number;
+    prize: string;
 }
 
 export default function Counter({
@@ -36,7 +39,14 @@ export default function Counter({
     const [random, setRandom] = useState<NodeJS.Timeout | null>(null);
     const [time, setTime] = useState<number>(0);
     const [showFramework, setShowFramework] = useState<boolean>(false);
-		const [minStopTime, setMinStopTime] = useState<number>(5);
+	const [minStopTime, setMinStopTime] = useState<number>(5);
+    const [prizes, setPrizes] = useState<Prize[]>([]);
+    const [currentPrize, setCurrentPrize] = useState<string>('');
+
+    useEffect(() => {
+        const prizeDatas = localStorage.getItem('doorprize.prizes');
+        setPrizes(prizeDatas ? JSON.parse(prizeDatas) : []);
+    }, []);
 
     useEffect(() => {
 			setPeserta(pesertaData);
@@ -64,6 +74,12 @@ export default function Counter({
 						return;
 				}
 
+                if (currentPrize === '') {
+                    setIsRun(false);
+                    alert('Pilih undian terlebih dahulu');
+                    return;
+                }
+
 				const intervalId = setInterval(() => {
 						const randomIndex = getSafeRandomIndex(peserta.length);
 						setRandomPeserta(peserta[randomIndex]);
@@ -84,31 +100,50 @@ export default function Counter({
 			}
     }, [isRun, peserta]);
 
-    const reloadWinners = () => {
-			const winners = localStorage.getItem('doorprize.winners');
-			if (winners) {
-					const parsedWinners = JSON.parse(winners) as Winners[];
-					setWinnersData(parsedWinners);
-					const pesertaIds = parsedWinners.map(winner => winner.id);
-					setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
-			}
+    const reloadWinners = (type: "win" | "drop") => {
+        const winners = localStorage.getItem('doorprize.winners');
+        if (winners) {
+            const parsedWinners = JSON.parse(winners) as Winners[];
+            setWinnersData(parsedWinners);
+            const pesertaIds = parsedWinners.map(winner => winner.id);
+            setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
+        }
 
-			const dropWinners = localStorage.getItem('doorprize.drop-winners');
-			if (dropWinners) {
-					const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
-					setDropWinnersData(parsedDropWinners);
-					const pesertaIds = parsedDropWinners.map(winner => winner.id);
-					setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
-			}
+        const dropWinners = localStorage.getItem('doorprize.drop-winners');
+        if (dropWinners) {
+            const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
+            setDropWinnersData(parsedDropWinners);
+            const pesertaIds = parsedDropWinners.map(winner => winner.id);
+            setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
+        }
+
+        if(type === "win") {
+            setCurrentPrize("");
+        }
     }
 
     return (
         <div className="grid items-center justify-items-center min-h-screen p-0 m-0">
-            <div>
+            <div className="absolute top-0 w-full mt-10 flex flex-col items-center">
                 <h1 className="text-6xl font-bold text-yellow-300 flex items-center">
                     <span className="mr-2">🎁</span> DoorPrize
                 </h1>
                 <div className="w-full text-center mt-10 text-4xl text-white">Sisa Peserta: <b>{peserta.length}</b></div>
+                <div className="mt-10 text-2xl font-bold text-yellow-400">Undian Hadiah</div>
+                <div className="mt-2 border border-dashed border-yellow-500 px-10 py-2 rounded-lg text-center">
+                    <select
+                        className="text-white text-center p-2 rounded bg-black appearance-none text-3xl font-bold uppercase"
+                        onChange={(e) => {
+                            setCurrentPrize(e.target.value);
+                        }}
+                        value={currentPrize}
+                    >
+                        <option value="">-- Pilih Undian --</option>
+                        {prizes.map((prize, index) => (
+                            <option key={index} value={prize.name}>{prize.name}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
             <main className="w-full">
                 <div className="w-full text-center text-white">
@@ -121,7 +156,7 @@ export default function Counter({
                     )}
                 </div>
             </main>
-            <footer>
+            <footer className="absolute bottom-0 w-full mb-10">
                 <div className="flex justify-center w-full mb-5 text-xl text-white">
                     Play Time : <b className="mx-2 text-2xl text-white"> {(time / 1000).toFixed(2)} </b> Detik
                 </div>
@@ -132,8 +167,11 @@ export default function Counter({
                         {isRun ? <span>Stop <span className="ml-2">⏹️</span></span> : <span>Play <span className="ml-2">▶️</span></span>}
                     </button>
                 </div>
+                <div className="text-center text-white mt-15">
+                    <Link href="/hadiah" className="hover:underline" target="_blank">⚙️ Pilihan Hadiah</Link>
+                </div>
             </footer>
-            {!isRun && time > 0 && <Fireworks isOpen={showFramework} winner={randomPeserta} reload={reloadWinners} />}
+            {!isRun && time > 0 && <Fireworks isOpen={showFramework} winner={randomPeserta} reload={reloadWinners} prize={currentPrize} />}
         </div>
     );
 }
