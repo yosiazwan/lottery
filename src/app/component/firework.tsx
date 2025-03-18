@@ -74,7 +74,17 @@ class Particle {
 	}
 }
 
-export default function Fireworks({ isOpen, winner, reload }: { isOpen: boolean, winner: Peserta, reload: () => void }) {
+export default function Fireworks({
+	isOpen,
+	winner,
+	reload,
+	prize,
+}: {
+	isOpen: boolean,
+	winner: Peserta,
+	reload: (type: "win" | "drop") => void,
+	prize: string
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isRunning, setIsRunning] = useState<boolean>(isOpen);
   let intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -130,19 +140,19 @@ export default function Fireworks({ isOpen, winner, reload }: { isOpen: boolean,
 	const saveWinner = () => {
 		const winners = localStorage.getItem('doorprize.winners');
 		const winnersData = winners ? JSON.parse(winners) as Winners[] : [];
-		winnersData.push({ ...winner, timestamp: Date.now() });
+		winnersData.push({ ...winner, timestamp: Date.now(), prize: prize });
 		localStorage.setItem('doorprize.winners', JSON.stringify(winnersData));
 		setOpen(false);
-		reload();
+		reload("win");
 	}
 
 	const dumpWinner = () => {
 		const dropWinners = localStorage.getItem('doorprize.drop-winners');
 		const dropWinnersData = dropWinners ? JSON.parse(dropWinners) as Winners[] : [];
-		dropWinnersData.push({ ...winner, timestamp: Date.now() });
+		dropWinnersData.push({ ...winner, timestamp: Date.now(), prize: prize });
 		localStorage.setItem('doorprize.drop-winners', JSON.stringify(dropWinnersData));
 		setOpen(false);
-		reload();
+		reload("drop");
 	}
 
   return (
@@ -154,6 +164,8 @@ export default function Fireworks({ isOpen, winner, reload }: { isOpen: boolean,
 					<div className="shadow-lg mt-5 text-center border-2 border-dashed px-25 py-15 rounded-4xl border-yellow-300 mb-15">
 						<div className="text-6xl font-bold mb-1 text-white">{winner.name}</div>
 						<div className="text-4xl text-white">{winner.id}</div>
+						<div className={`${gFont.className} text-4xl text-yellow-300 mt-10`}>Mendapatkan Hadiah</div>
+						<div className="text-6xl text-white uppercase mt-5">🎊 {prize} 🎊</div>
 					</div>
 					<div className="flex flex-row gap-25">
 						<button
