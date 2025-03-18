@@ -73,7 +73,7 @@ export default function TablePeserta({
 			<div className="mt-2">
 				<textarea
 					placeholder="Enter your csv data with header..."
-					className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+					className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
 					value={csvData}
 					onChange={handleCsvInput}
 				/>
