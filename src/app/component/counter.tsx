@@ -39,7 +39,7 @@ export default function Counter({
     const [random, setRandom] = useState<NodeJS.Timeout | null>(null);
     const [time, setTime] = useState<number>(0);
     const [showFramework, setShowFramework] = useState<boolean>(false);
-	const [minStopTime, setMinStopTime] = useState<number>(5);
+	const [minStopTime, setMinStopTime] = useState<number>(1);
     const [prizes, setPrizes] = useState<Prize[]>([]);
     const [currentPrize, setCurrentPrize] = useState<string>('');
 
