@@ -108,10 +108,10 @@ export default function Counter({
                 <h1 className="text-6xl font-bold text-yellow-300 flex items-center">
                     <span className="mr-2">🎁</span> DoorPrize
                 </h1>
-                <div className="w-full text-center mt-10 text-4xl">Sisa Peserta: <b>{peserta.length}</b></div>
+                <div className="w-full text-center mt-10 text-4xl text-white">Sisa Peserta: <b>{peserta.length}</b></div>
             </div>
             <main className="w-full">
-                <div className="w-full text-center">
+                <div className="w-full text-center text-white">
                     {!isRun && <div>Waiting...</div>}
                     {isRun && (
                         <div>

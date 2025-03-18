@@ -102,7 +102,7 @@ export default function TableWinner({
 		<div>
 			<div>
 				<div className="flex flex-row justify-between items-center">
-					<h1 className="font-bold text-xl"><span role="img" aria-label="smile">😊</span> Daftar Pemenang</h1>
+					<h1 className="font-bold text-xl text-white"><span role="img" aria-label="smile">😊</span> Daftar Pemenang</h1>
 					<div>
 						<button className="px-4 py-1 bg-green-700 text-white rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadCSV}>Download (.csv)</button>
 						<button className="px-4 py-1 bg-red-700 text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetWinners}>Reset</button>
@@ -135,7 +135,7 @@ export default function TableWinner({
 			</div>
 			<div className="mt-15">
 				<div className="flex flex-row justify-between items-center">
-					<h1 className="font-bold text-xl"><span role="img" aria-label="sad">😢</span> Peserta Gugur</h1>
+					<h1 className="font-bold text-xl text-white"><span role="img" aria-label="sad">😢</span> Peserta Gugur</h1>
 					<div>
 						<button className="px-4 py-1 bg-green-700 text-white rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadCSV2}>Download (.csv)</button>
 						<button className="px-4 py-1 bg-red-700 text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetDropWinners}>Reset</button>

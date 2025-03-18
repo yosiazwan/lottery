@@ -69,7 +69,7 @@ export default function TablePeserta({
 
 	return (
 		<div>
-			<h1 className="font-bold text-xl">Daftar Peserta</h1>
+			<h1 className="font-bold text-xl text-white">Daftar Peserta</h1>
 			<div className="mt-2">
 				<textarea
 					placeholder="Enter your csv data with header..."
