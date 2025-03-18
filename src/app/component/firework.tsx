@@ -152,8 +152,8 @@ export default function Fireworks({ isOpen, winner, reload }: { isOpen: boolean,
 					<span className="text-9xl">🎉</span>
 					<div className={`${gFont.className} text-8xl mt-5 mb-5 font-bold text-yellow-300`}>Selamat Kepada</div>
 					<div className="shadow-lg mt-5 text-center border-2 border-dashed px-25 py-15 rounded-4xl border-yellow-300 mb-15">
-						<div className="text-6xl font-bold mb-1 text-white-300">{winner.name}</div>
-						<div className="text-4xl text-white-500">{winner.id}</div>
+						<div className="text-6xl font-bold mb-1 text-white">{winner.name}</div>
+						<div className="text-4xl text-white">{winner.id}</div>
 					</div>
 					<div className="flex flex-row gap-25">
 						<button
