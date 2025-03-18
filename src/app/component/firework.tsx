@@ -162,13 +162,13 @@ export default function Fireworks({ isOpen, winner, reload }: { isOpen: boolean,
 									dumpWinner();
 								}
 							}}
-							className="p-4 px-10 bg-red-700 text-white rounded-lg shadow-lg"
+							className="p-4 px-10 bg-red-700 text-white rounded-lg shadow-lg hover:cursor-pointer"
 						>
 							Gugur
 						</button>
 						<button
 							onClick={saveWinner}
-							className="p-4 px-10 bg-green-700 text-white rounded-lg shadow-lg"
+							className="p-4 px-10 bg-green-700 text-white rounded-lg shadow-lg hover:cursor-pointer"
 						>
 							Simpan
 						</button>

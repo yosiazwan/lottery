@@ -129,7 +129,7 @@ export default function Counter({
                     <button
                         onClick={() => setIsRun(!isRun)}
                         className={`${isRun ? `bg-red-500` : `bg-blue-500`} px-18 hover: cursor-pointer py-4 text-white text-4xl font-bold rounded-full w-fit ${isRun && ((time / 1000) < minStopTime) ? 'hidden' : ''}`}>
-                        {isRun ? "Stop" : "Start"}
+                        {isRun ? <span>Stop <span className="ml-2">⏹️</span></span> : <span>Play <span className="ml-2">▶️</span></span>}
                     </button>
                 </div>
             </footer>
