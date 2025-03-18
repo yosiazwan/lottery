@@ -46,6 +46,7 @@ export default function Counter({
     useEffect(() => {
         const prizeDatas = localStorage.getItem('doorprize.prizes');
         setPrizes(prizeDatas ? JSON.parse(prizeDatas) : []);
+        setMinStopTime(5);
     }, []);
 
     useEffect(() => {
@@ -167,8 +168,22 @@ export default function Counter({
                         {isRun ? <span>Stop <span className="ml-2">⏹️</span></span> : <span>Play <span className="ml-2">▶️</span></span>}
                     </button>
                 </div>
-                <div className="text-center text-white mt-15">
+                <div className="text-center text-white mt-15 flex flex-row items-center justify-center gap-10">
                     <Link href="/hadiah" className="hover:underline" target="_blank">⚙️ Pilihan Hadiah</Link>
+                    <div className="flex items-center">
+                        <label className="text-xl text-white mr-2">Play Time:</label>
+                        <select
+                            className="text-white p-2 rounde bg-gray-400"
+                            onChange={(e) => setMinStopTime(Number(e.target.value))}
+                            value={minStopTime}
+                        >
+                            {[1,2,3,4,5].map((num) => (
+                                <option key={num} value={num}>
+                                    {num}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </footer>
             {!isRun && time > 0 && <Fireworks isOpen={showFramework} winner={randomPeserta} reload={reloadWinners} prize={currentPrize} />}
