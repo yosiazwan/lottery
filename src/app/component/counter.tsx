@@ -46,7 +46,6 @@ export default function Counter({
     useEffect(() => {
         const prizeDatas = localStorage.getItem('doorprize.prizes');
         setPrizes(prizeDatas ? JSON.parse(prizeDatas) : []);
-        setMinStopTime(5);
     }, []);
 
     useEffect(() => {
