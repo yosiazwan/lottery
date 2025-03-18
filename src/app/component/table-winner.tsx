@@ -33,7 +33,7 @@ export default function TableWinner({
 	}
 
 	const downloadCSV = () => {
-		const headers = ['Lot', 'NIK', 'Nama', 'Draw Time'];
+		const headers = ['Lot', 'NIK', 'Nama', 'Prize', 'Draw Date', 'Draw Time'];
 		const rows = winners.map((peserta, index) => [
 			`#${index + 1}`,
 			peserta.id,
@@ -59,7 +59,7 @@ export default function TableWinner({
 	}
 
 	const downloadCSV2 = () => {
-		const headers = ['Lot', 'NIK', 'Nama', 'Draw Time'];
+		const headers = ['Lot', 'NIK', 'Nama', 'Prize', 'Draw Date', 'Draw Time'];
 		const rows = dropWinners.map((peserta, index) => [
 			`#${index + 1}`,
 			peserta.id,
