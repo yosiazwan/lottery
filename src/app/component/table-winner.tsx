@@ -38,6 +38,7 @@ export default function TableWinner({
 			`#${index + 1}`,
 			peserta.id,
 			peserta.name,
+			peserta.prize,
 			new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 		]);
 
@@ -63,6 +64,7 @@ export default function TableWinner({
 			`#${index + 1}`,
 			peserta.id,
 			peserta.name,
+			peserta.prize,
 			new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 		]);
 
