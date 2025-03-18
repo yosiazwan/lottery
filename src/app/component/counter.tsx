@@ -125,7 +125,7 @@ export default function Counter({
 
     return (
         <div className="grid items-center justify-items-center min-h-screen p-0 m-0">
-            <div className="absolute top-0 w-full mt-10 flex flex-col items-center">
+            <div className="absolute top-0 w-fit mt-10 flex flex-col items-center">
                 <h1 className="text-6xl font-bold text-yellow-300 flex items-center">
                     <span className="mr-2">🎁</span> DoorPrize
                 </h1>
