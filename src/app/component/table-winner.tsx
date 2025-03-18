@@ -134,7 +134,7 @@ export default function TableWinner({
 						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetWinners}>Reset</button>
 					</div>
 				</div>
-				<div className="mt-4">
+				<div className="mt-4 overflow-y-auto h-150">
 					<table className="min-w-full divide-y divide-gray-700">
 						<thead className="bg-gray-900">
 							<tr>
@@ -163,7 +163,7 @@ export default function TableWinner({
 					</table>
 				</div>
 			</div>
-			<div className="mt-15">
+			<div className="mt-10">
 				<div className="flex flex-row justify-between items-center">
 					<h1 className="font-bold text-xl text-white"><span role="img" aria-label="sad">😢</span> Peserta Gugur</h1>
 					<div>
@@ -171,7 +171,7 @@ export default function TableWinner({
 						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetDropWinners}>Reset</button>
 					</div>
 				</div>
-				<div className="mt-4">
+				<div className="mt-4 overflow-y-auto h-80">
 					<table className="min-w-full divide-y divide-gray-700">
 						<thead className="bg-gray-900">
 							<tr>
