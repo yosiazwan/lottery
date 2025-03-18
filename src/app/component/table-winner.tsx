@@ -32,6 +32,24 @@ export default function TableWinner({
 		}
 	}
 
+	const deleteWinner = (index: number) => {
+		if (confirm('Are you sure you want to delete this winner?')) {
+			const updatedWinners = winners.filter((_, i) => i !== index);
+			setWinners(updatedWinners);
+			localStorage.setItem('doorprize.winners', JSON.stringify(updatedWinners));
+			window.location.reload();
+		}
+	}
+
+	const deleteDropWinner = (index: number) => {
+		if (confirm('Are you sure you want to delete this drop winner?')) {
+			const updatedDropWinners = dropWinners.filter((_, i) => i !== index);
+			setDropWinners(updatedDropWinners);
+			localStorage.setItem('doorprize.drop-winners', JSON.stringify(updatedDropWinners));
+			window.location.reload();
+		}
+	}
+
 	const downloadCSV = () => {
 		const headers = ['Lot', 'NIK', 'Nama', 'Prize', 'Draw Date', 'Draw Time'];
 		const rows = winners.map((peserta, index) => [
@@ -118,6 +136,7 @@ export default function TableWinner({
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">NIK</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Nama</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Prize</th>
+								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Actions</th>
 							</tr>
 						</thead>
 						<tbody className="bg-gray-700 divide-y divide-gray-700">
@@ -127,9 +146,11 @@ export default function TableWinner({
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.id}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.name}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.prize}</td>
-									{/* <td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">
-										{new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-									</td> */}
+									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">
+										<button className="px-2 py-1 bg-red-600 text-white rounded" onClick={() => deleteWinner(index)}>
+											<span role="img" aria-label="trash">🗑️</span>
+										</button>
+									</td>
 								</tr>
 							))}
 						</tbody>
@@ -152,6 +173,7 @@ export default function TableWinner({
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">NIK</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Nama</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Prize</th>
+								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Actions</th>
 							</tr>
 						</thead>
 						<tbody className="bg-gray-700 divide-y divide-gray-700">
@@ -161,9 +183,11 @@ export default function TableWinner({
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.id}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.name}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.prize}</td>
-									{/* <td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">
-										{new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-									</td> */}
+									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">
+										<button className="px-2 py-1 bg-red-600 text-white rounded" onClick={() => deleteDropWinner(index)}>
+											<span role="img" aria-label="trash">🗑️</span>
+										</button>
+									</td>
 								</tr>
 							))}
 						</tbody>
