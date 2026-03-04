@@ -58,7 +58,7 @@ export default function TableWinner({
 	}
 
 	const downloadCSV = () => {
-		const headers = ['Lot', 'NIK', 'Nama', 'Prize', 'Draw Date', 'Draw Time'];
+		const headers = ['Lot', 'ID', 'Name', 'Prize', 'Draw Date', 'Draw Time'];
 		const rows = winners.map((peserta, index) => [
 			`#${index + 1}`,
 			peserta.id,
@@ -140,7 +140,7 @@ export default function TableWinner({
 						<thead className="bg-gray-900">
 							<tr>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Lot</th>
-								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">NIK</th>
+								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">ID</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Nama</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Prize</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Actions</th>
@@ -164,7 +164,7 @@ export default function TableWinner({
 					</table>
 				</div>
 			</div>
-			<div className="mt-10">
+			<div className="mt-5">
 				<div className="flex flex-row justify-between items-center">
 					<h1 className="font-bold text-xl text-white"><span role="img" aria-label="sad">😢</span> Peserta Gugur</h1>
 					<div>
@@ -177,7 +177,7 @@ export default function TableWinner({
 						<thead className="bg-gray-900 sticky top-0 z-10">
 							<tr>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">No.</th>
-								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">NIK</th>
+								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">ID</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Nama</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Prize</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Actions</th>

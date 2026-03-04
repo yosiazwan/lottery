@@ -29,11 +29,11 @@ export default function TablePeserta({
 
 	const saveToLocalStorage = () => {
 		const rows = csvData.split("\n");
-		const jsonData = rows.slice(1).map(row => {
+		const jsonData = rows.slice(0).map(row => {
 			const [id, name] = row.split(",").map(item => item.replace(/"/g, ""));
 			return { id, name };
 		});
-		acakData(jsonData);
+		setPesertaData(jsonData); // Update the parent component with the new data
 	};
 
 	const acakData = (data: any) => {
@@ -72,7 +72,7 @@ export default function TablePeserta({
 			<h1 className="font-bold text-xl text-white">Daftar Peserta</h1>
 			<div className="mt-2">
 				<textarea
-					placeholder="Enter your csv data with header..."
+					placeholder="Masukkan data peserta dalam format CSV (id,name) per baris"
 					className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
 					value={csvData}
 					onChange={handleCsvInput}
@@ -101,7 +101,7 @@ export default function TablePeserta({
 					<thead className="bg-gray-900 sticky top-0">
 						<tr>
 							<th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">No.</th>
-							<th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">NIK</th>
+							<th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">ID</th>
 							<th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-100 uppercase tracking-wider">Nama</th>
 						</tr>
 					</thead>

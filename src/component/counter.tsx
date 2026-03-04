@@ -142,7 +142,7 @@ export default function Counter({
                 <h1 className="text-6xl font-bold text-yellow-300 flex items-center">
                     <span className="mr-2">🎁</span> DoorPrize
                 </h1>
-                <div className="w-full text-center mt-10 text-4xl text-white">Sisa Peserta: <b>{peserta.length}</b></div>
+                <div className="w-full text-center mt-10 text-4xl text-white">Jumlah Peserta: <b>{peserta.length}</b></div>
                 <div className="mt-10 text-2xl font-bold text-yellow-400">Undian Hadiah</div>
                 <div className="mt-2 border border-dashed border-yellow-500 px-10 py-2 rounded-lg text-center">
                     <select
