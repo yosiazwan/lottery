@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from "react";
 import { Peserta, Winners } from "./counter";
+import { eventBus } from "@/libs/events";
 
 export default function TableWinner({
 	winnersData,
@@ -171,9 +172,9 @@ export default function TableWinner({
 						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetDropWinners}>Reset</button>
 					</div>
 				</div>
-				<div className="mt-4 overflow-y-auto h-80">
+				<div className="mt-4 max-h-50 overflow-y-auto">
 					<table className="min-w-full divide-y divide-gray-700">
-						<thead className="bg-gray-900">
+						<thead className="bg-gray-900 sticky top-0 z-10">
 							<tr>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">No.</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">NIK</th>
@@ -183,14 +184,17 @@ export default function TableWinner({
 							</tr>
 						</thead>
 						<tbody className="bg-gray-700 divide-y divide-gray-700">
-							{dropWinners && dropWinners.map((peserta: Winners, index: number) => (
+							{dropWinners?.map((peserta: Winners, index: number) => (
 								<tr key={index}>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">#{index + 1}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.id}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.name}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">{peserta.prize}</td>
 									<td className="px-2 py-2 whitespace-nowrap text-md text-gray-100">
-										<button className="px-2 py-1 bg-red-600 text-white rounded" onClick={() => deleteDropWinner(index)}>
+										<button
+											className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+											onClick={() => deleteDropWinner(index)}
+										>
 											<span role="img" aria-label="trash">🗑️</span>
 										</button>
 									</td>

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from "react";
-import TablePeserta from "./component/table-peserta";
-import Counter, { Peserta, Winners } from "./component/counter";
-import TableWinner from "./component/table-winner";
+import TablePeserta from "../component/table-peserta";
+import Counter, { Peserta, Winners } from "../component/counter";
+import TableWinner from "../component/table-winner";
 
 export default function Home() {
   const [leftSidebar, setLeftSidebar] = useState<boolean>(true);

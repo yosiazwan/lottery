@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Fireworks from "./firework";
 import Link from "next/link";
-import { Prize } from "../hadiah/page";
+import { Prize } from "../app/hadiah/page";
+import { crossTabBus } from "@/libs/crossTabEvent";
 
 export type Peserta = {
     id: string;
@@ -42,10 +43,23 @@ export default function Counter({
 	const [minStopTime, setMinStopTime] = useState<number>(1);
     const [prizes, setPrizes] = useState<Prize[]>([]);
     const [currentPrize, setCurrentPrize] = useState<string>('');
+    const [sisaPeserta, setSisaPeserta] = useState<number>(0);
 
     useEffect(() => {
         const prizeDatas = localStorage.getItem('doorprize.prizes');
         setPrizes(prizeDatas ? JSON.parse(prizeDatas) : []);
+
+        const handlePrizeUpdate = async (data: { name: string }) => {
+            await new Promise(resolve => setTimeout(resolve, 100)); // Delay untuk memastikan localStorage sudah terupdate
+            const prizeDatas = localStorage.getItem('doorprize.prizes');
+            setPrizes(prizeDatas ? JSON.parse(prizeDatas) : []);
+        };
+
+        crossTabBus.on('prize:updated', handlePrizeUpdate);
+
+        return () => {
+            crossTabBus.off('prize:updated', handlePrizeUpdate);
+        };
     }, []);
 
     useEffect(() => {

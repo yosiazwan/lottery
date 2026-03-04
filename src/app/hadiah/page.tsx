@@ -1,5 +1,6 @@
 'use client';
 
+import { crossTabBus } from '@/libs/crossTabEvent';
 import { useState, useEffect } from 'react';
 
 export interface Prize {
@@ -23,6 +24,7 @@ export default function HadiahPage() {
 
   const handleAddPrize = () => {
     setPrizes([...prizes, { name }]);
+    crossTabBus.emit('prize:updated', { name: name });
     setName('');
   };
 
