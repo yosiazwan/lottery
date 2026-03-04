@@ -2,7 +2,7 @@
 Aplikasi untuk doorprize
 
 Catatan:
-Input daftar peserta dalam bentuk CSV data dengan header `id`, `name`.
+Input daftar peserta dalam bentuk CSV data dengan format (id, name)
 
 ## Clone Repository
 
