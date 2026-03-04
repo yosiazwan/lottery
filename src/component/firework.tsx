@@ -157,7 +157,7 @@ export default function Fireworks({
 
   return (
 		<>
-			<div className={`${!open ? "hidden" : ""} overflow-hidden flex items-center justify-center h-screen`}>
+			<div className={`${!open ? "hidden" : ""} fixed inset-0 z-[9999] overflow-hidden flex items-center justify-center h-screen`}>
 				<div className="absolute top-0 flex flex-col items-center justify-center z-10 w-full h-full">
 					<span className="text-9xl">🎉</span>
 					<div className={`${gFont.className} text-8xl mt-5 mb-5 font-bold text-yellow-300`}>Selamat Kepada</div>
