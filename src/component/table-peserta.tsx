@@ -1,17 +1,8 @@
 'use client';
 import { useEffect, useState } from "react";
-import { Peserta } from "./counter";
-
-const shuffleArray = <T,>(array: T[]): T[] => {
-	let shuffled = [...array]; // Copy array agar tidak merubah aslinya
-	for (let i = shuffled.length - 1; i > 0; i--) {
-		const j = Math.floor(Math.random() * (i + 1));
-		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-	}
-	return shuffled;
-};
-
-const getRandomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+import { getRandomInt } from "@/libs/number";
+import { shuffleArray } from "@/libs/array";
+import { Peserta } from "@/libs/type";
 
 export default function TablePeserta({
 	setPesertaData,
@@ -22,6 +13,7 @@ export default function TablePeserta({
 }) {
 	const [csvData, setCsvData] = useState("");
 	const [tableData, setTableData] = useState<Peserta[]>([]);
+	const [searchQuery, setSearchQuery] = useState("");
 
 	const handleCsvInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
 		setCsvData(event.target.value);
@@ -54,7 +46,6 @@ export default function TablePeserta({
 		for(let i=0; i < getRandomInt(5, 15); i++) {
 			newData = shuffleArray(newData);
 		}
-		// setTableData(shuffleArray(tableData));
 		localStorage.setItem("doorprize.peserta", JSON.stringify(newData));
 		setPesertaData(newData);
 	};
@@ -63,11 +54,22 @@ export default function TablePeserta({
 		const confirmed = window.confirm("Apakah Anda yakin ingin menghapus semua data peserta?");
 		if (confirmed) {
 			localStorage.removeItem("doorprize.peserta");
-			setCsvData(""); // Clear the textarea
-			setTableData([]); // Clear the table data
-			setPesertaData([]); // Update the parent component with empty data
+			setCsvData("");
+			setTableData([]);
+			setPesertaData([]);
 		}
 	};
+
+	const sortByName = (data: any) => {
+		const newData = [...data].sort((a, b) => a.name.localeCompare(b.name));
+		localStorage.setItem("doorprize.peserta", JSON.stringify(newData));
+		setPesertaData(newData);
+	};
+
+	const filteredData = pesertaData.filter(peserta =>
+		peserta.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+		peserta.name.toLowerCase().includes(searchQuery.toLowerCase())
+	);
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -75,7 +77,7 @@ export default function TablePeserta({
 			if (localStoragePeserta) {
 				const parsedData = JSON.parse(localStoragePeserta);
 				setTableData(parsedData);
-				setPesertaData(parsedData); // Update the parent component with the fetched data
+				setPesertaData(parsedData);
 			}
 		};
 
@@ -110,6 +112,21 @@ export default function TablePeserta({
 				>
 					Acak Data
 				</button>
+				<button
+					onClick={() => { sortByName(pesertaData); }}
+					className="ml-2 px-2 py-1 hover: cursor-pointer bg-white text-black text-xs rounded-lg hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+				>
+					Sort By Name
+				</button>
+			</div>
+			<div className="mt-4">
+				<input
+					type="text"
+					placeholder="Cari berdasarkan ID atau Nama..."
+					value={searchQuery}
+					onChange={(e) => setSearchQuery(e.target.value)}
+					className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+				/>
 			</div>
 			<div className="mt-4 h-150 overflow-y-auto">
 				<table className="min-w-full divide-y divide-gray-700">
@@ -121,7 +138,7 @@ export default function TablePeserta({
 						</tr>
 					</thead>
 					<tbody className="bg-gray-500 divide-y divide-gray-700">
-						{pesertaData.map((peserta: { id: string, name: string }, index: number) => (
+						{filteredData.map((peserta: { id: string, name: string }, index: number) => (
 							<tr key={index}>
 								<td className="px-2 py-2 whitespace-nowrap text-sm text-gray-100">{index + 1}</td>
 								<td className="px-2 py-2 whitespace-nowrap text-sm text-gray-100">{peserta.id}</td>

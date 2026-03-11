@@ -57,14 +57,15 @@ export default function TableWinner({
 		}
 	}
 
-	const downloadCSV = () => {
-		const headers = ['Lot', 'ID', 'Name', 'Prize', 'Draw Date', 'Draw Time'];
+	const downloadWinnersCSV = () => {
+		const headers = ['Lot', 'ID', 'Name', 'Prize', 'DrawDate', 'DrawTime'];
 		const rows = winners.map((peserta, index) => [
 			`#${index + 1}`,
 			peserta.id,
-			peserta.name,
+			`"${peserta.name}"`,
 			peserta.prize,
-			new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+			new Date(peserta.timestamp).toISOString().slice(0, 10),
+			new Date(peserta.timestamp).toISOString().slice(11, 19)
 		]);
 
 		const csvContent = [
@@ -76,19 +77,19 @@ export default function TableWinner({
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement('a');
 		link.setAttribute('href', url);
-		link.setAttribute('download', 'doorprize-winners.csv');
+		link.setAttribute('download', 'doorprize-winners-' + new Date().toISOString().slice(0, 10) + '.csv');
 		link.style.visibility = 'hidden';
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
 	}
 
-	const downloadCSV2 = () => {
+	const downloadDropWinnersCSV = () => {
 		const headers = ['Lot', 'NIK', 'Nama', 'Prize', 'Draw Date', 'Draw Time'];
 		const rows = dropWinners.map((peserta, index) => [
 			`#${index + 1}`,
 			peserta.id,
-			peserta.name,
+			`"${peserta.name}"`, // Add quotes to handle commas in names
 			peserta.prize,
 			new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 		]);
@@ -102,7 +103,7 @@ export default function TableWinner({
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement('a');
 		link.setAttribute('href', url);
-		link.setAttribute('download', 'peserta-gugur.csv');
+		link.setAttribute('download', 'peserta-gugur-' + new Date().toISOString().slice(0, 10) + '.csv');
 		link.style.visibility = 'hidden';
 		document.body.appendChild(link);
 		link.click();
@@ -131,7 +132,7 @@ export default function TableWinner({
 				<div className="flex flex-row justify-between items-center">
 					<h1 className="font-bold text-xl text-white"><span role="img" aria-label="smile">😊</span> Daftar Pemenang</h1>
 					<div>
-						<button className="px-4 py-1 bg-green-700 hover:cursor-pointer text-white rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadCSV}>Download (.csv)</button>
+						<button className="px-4 py-1 bg-green-700 hover:cursor-pointer text-white rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadWinnersCSV}>Download (.csv)</button>
 						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetWinners}>Reset</button>
 					</div>
 				</div>
@@ -168,7 +169,7 @@ export default function TableWinner({
 				<div className="flex flex-row justify-between items-center">
 					<h1 className="font-bold text-xl text-white"><span role="img" aria-label="sad">😢</span> Peserta Gugur</h1>
 					<div>
-						<button className="px-4 py-1 bg-green-700 hover:cursor-pointer text-white rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadCSV2}>Download (.csv)</button>
+						<button className="px-4 py-1 bg-green-700 hover:cursor-pointer text-white rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadDropWinnersCSV}>Download (.csv)</button>
 						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetDropWinners}>Reset</button>
 					</div>
 				</div>
