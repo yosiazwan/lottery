@@ -33,14 +33,10 @@ export default function Counter() {
 	const [winners, setWinners] = useState<Peserta[]>([]);
 	const [winnerCount, setWinnerCount] = useState<number>(1);
 
-	// Method selector
 	const [drawMethod, setDrawMethod] = useState<DrawMethod>('cycle');
 
-	// Cycle-only states
 	const [hasCompletedCycle, setHasCompletedCycle] = useState<boolean>(false);
 	const [minCycles, setMinCycles] = useState<number>(2);
-
-	// Random-only state
 	const [minStopTime, setMinStopTime] = useState<number>(2);
 
 	const cycleIndexRef = useRef<number>(0);
@@ -48,53 +44,46 @@ export default function Counter() {
 	const completedCyclesRef = useRef<number>(0);
 	const pesertaRef = useRef<Peserta[]>([]);
 
-	// Sync pesertaRef setiap peserta berubah
+	// Metode efektif: jika winnerCount > 1, paksa random
+	const effectiveMethod: DrawMethod = winnerCount > 1 ? 'random' : drawMethod;
+
 	useEffect(() => {
 		pesertaRef.current = peserta;
 	}, [peserta]);
 
-	// Load prizes + cross tab listener
 	useEffect(() => {
 		const loadPrizes = () => {
 			const prizeDatas = localStorage.getItem('doorprize.prizes');
 			setPrizes(prizeDatas ? JSON.parse(prizeDatas) : []);
 		};
 		loadPrizes();
-
 		const handlePrizeUpdate = (data: Prize[]) => setPrizes(data);
 		crossTabBus.on('prize:updated', handlePrizeUpdate);
 		return () => crossTabBus.off('prize:updated', handlePrizeUpdate);
 	}, []);
 
-	// Load peserta from localStorage dan filter awal
 	useEffect(() => {
 		const rebuildPeserta = (pesertaData: Peserta[]) => {
 			let filteredPeserta = [...pesertaData];
-
 			const storedWinners = localStorage.getItem('doorprize.winners');
 			if (storedWinners) {
 				const parsedWinners = JSON.parse(storedWinners) as Winners[];
 				filteredPeserta = filteredPeserta.filter(p => !parsedWinners.map(w => w.id).includes(p.id));
 			}
-
 			const dropWinners = localStorage.getItem('doorprize.drop-winners');
 			if (dropWinners) {
 				const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
 				filteredPeserta = filteredPeserta.filter(p => !parsedDropWinners.map(w => w.id).includes(p.id));
 			}
-
 			setPeserta(filteredPeserta);
 		};
-
 		const storedPeserta = localStorage.getItem('doorprize.peserta');
 		if (storedPeserta) rebuildPeserta(JSON.parse(storedPeserta) as Peserta[]);
-
 		const onPesertaUpdated = (data: Peserta[]) => rebuildPeserta(data);
 		crossTabBus.on('peserta:updated', onPesertaUpdated);
 		return () => crossTabBus.off('peserta:updated', onPesertaUpdated);
 	}, []);
 
-	// Listen eventBus untuk sync reaktif dari TableWinner
 	useEffect(() => {
 		const rebuildPesertaFromWinners = (updatedWinners: Winners[], updatedDrops: Winners[]) => {
 			const storedPeserta = localStorage.getItem('doorprize.peserta');
@@ -103,17 +92,14 @@ export default function Counter() {
 			const dropIds = new Set(updatedDrops.map(w => w.id));
 			setPeserta(allPeserta.filter(p => !winnerIds.has(p.id) && !dropIds.has(p.id)));
 		};
-
 		const onWinnersUpdated = (updatedWinners: Winners[]) => {
 			const stored = localStorage.getItem('doorprize.drop-winners');
 			rebuildPesertaFromWinners(updatedWinners, stored ? JSON.parse(stored) : []);
 		};
-
 		const onDropUpdated = (updatedDrops: Winners[]) => {
 			const stored = localStorage.getItem('doorprize.winners');
 			rebuildPesertaFromWinners(stored ? JSON.parse(stored) : [], updatedDrops);
 		};
-
 		crossTabBus.on('winners:updated', onWinnersUpdated);
 		crossTabBus.on('dropWinners:updated', onDropUpdated);
 		return () => {
@@ -122,7 +108,6 @@ export default function Counter() {
 		};
 	}, []);
 
-	// Main interval effect
 	useEffect(() => {
 		if (!isRun) {
 			if (random) {
@@ -143,13 +128,11 @@ export default function Counter() {
 			alert('Tidak ada peserta');
 			return;
 		}
-
 		if (peserta.length < winnerCount) {
 			setIsRun(false);
 			alert(`Peserta tidak cukup. Butuh ${winnerCount}, tersedia ${peserta.length}`);
 			return;
 		}
-
 		if (currentPrize === '') {
 			setIsRun(false);
 			alert('Pilih undian terlebih dahulu');
@@ -158,17 +141,15 @@ export default function Counter() {
 
 		let intervalId: NodeJS.Timeout;
 
-		if (drawMethod === 'cycle') {
+		if (effectiveMethod === 'cycle') {
 			shuffledRef.current = shuffleArray([...peserta]);
 			cycleIndexRef.current = 0;
 
 			intervalId = setInterval(() => {
 				const idx = cycleIndexRef.current;
 				setRandomPeserta(shuffledRef.current[idx]);
-
 				const nextIndex = (idx + 1) % shuffledRef.current.length;
 				cycleIndexRef.current = nextIndex;
-
 				if (nextIndex === 0) {
 					completedCyclesRef.current += 1;
 					if (completedCyclesRef.current >= minCycles) {
@@ -193,23 +174,20 @@ export default function Counter() {
 			clearInterval(intervalId);
 			clearInterval(timerId);
 		};
-	}, [isRun, currentPrize, peserta, drawMethod, minCycles, winnerCount]);
+	}, [isRun, currentPrize, peserta, effectiveMethod, minCycles, winnerCount]);
 
-	// Saat Stop, ambil N pemenang dari posisi roda saat ini
 	const handleStop = () => {
 		if (!canStop) return;
 
 		let selected: Peserta[] = [];
 
-		if (drawMethod === 'cycle') {
-			// Ambil dari posisi cycle saat ini, maju N slot
+		if (effectiveMethod === 'cycle') {
 			const arr = shuffledRef.current;
 			const startIdx = cycleIndexRef.current;
 			for (let i = 0; i < winnerCount; i++) {
 				selected.push(arr[(startIdx + i) % arr.length]);
 			}
 		} else {
-			// Random mode: ambil N unik secara acak dari peserta
 			const shuffled = shuffleArray([...pesertaRef.current]);
 			selected = shuffled.slice(0, winnerCount);
 		}
@@ -221,15 +199,13 @@ export default function Counter() {
 	const reloadWinners = (type: "win" | "drop") => {
 		const storedWinners = localStorage.getItem('doorprize.winners');
 		if (storedWinners) crossTabBus.emit('winners:updated', JSON.parse(storedWinners) as Winners[]);
-
 		const dropWinners = localStorage.getItem('doorprize.drop-winners');
 		if (dropWinners) crossTabBus.emit('dropWinners:updated', JSON.parse(dropWinners) as Winners[]);
-
 		if (type === "win") setCurrentPrize("");
 	};
 
 	const canStop = isRun && (
-		drawMethod === 'random'
+		effectiveMethod === 'random'
 			? (time / 1000) >= minStopTime
 			: hasCompletedCycle
 	);
@@ -245,35 +221,40 @@ export default function Counter() {
 				</div>
 				<div className="mt-10 text-2xl font-bold text-yellow-400">Hadiah Yang Diundi</div>
 				<div className="mt-2 border border-dashed border-yellow-500 px-10 py-2 rounded-lg text-center">
-						<select
-								className="text-white text-center p-2 rounded bg-black appearance-none text-3xl font-bold uppercase"
-								onChange={(e) => setCurrentPrize(e.target.value)}
-								value={currentPrize}
-						>
-								<option value="">-- Pilih Hadiah --</option>
-								{prizes.map((prize, index) => (
-										<option key={index} value={prize.name}>{prize.name}</option>
-								))}
-						</select>
+					<select
+						className="text-white text-center p-2 rounded bg-black appearance-none text-3xl font-bold uppercase"
+						onChange={(e) => setCurrentPrize(e.target.value)}
+						value={currentPrize}
+					>
+						<option value="">-- Pilih Hadiah --</option>
+						{prizes.map((prize, index) => (
+							<option key={index} value={prize.name}>{prize.name}</option>
+						))}
+					</select>
+				</div>
+				<div className="mt-6 flex items-center gap-3">
+					<label className="text-xl text-yellow-400 font-bold">Jumlah Pemenang:</label>
+					<input
+						type="number"
+						min={1}
+						max={peserta.length || 1}
+						value={winnerCount}
+						disabled={isRun}
+						onChange={(e) => {
+							const val = Math.max(1, parseInt(e.target.value) || 1);
+							setWinnerCount(val);
+						}}
+						className="w-20 text-center text-2xl font-bold text-white bg-black border border-yellow-500 rounded-lg p-2 disabled:opacity-50"
+					/>
+					<span className="text-gray-400 text-lg">orang</span>
 				</div>
 
-				{/* Jumlah pemenang — di bawah pilihan hadiah */}
-				<div className="mt-6 flex items-center gap-3">
-						<label className="text-xl text-yellow-400 font-bold">Jumlah Pemenang:</label>
-						<input
-								type="number"
-								min={1}
-								max={peserta.length || 1}
-								value={winnerCount}
-								disabled={isRun}
-								onChange={(e) => {
-										const val = Math.max(1, parseInt(e.target.value) || 1);
-										setWinnerCount(val);
-								}}
-								className="w-20 text-center text-2xl font-bold text-white bg-black border border-yellow-500 rounded-lg p-2 disabled:opacity-50"
-						/>
-						<span className="text-gray-400 text-lg">orang</span>
-				</div>
+				{/* Hanya tampil info metode paksa jika winnerCount > 1 */}
+				{winnerCount > 1 && (
+					<div className="mt-2 text-sm text-gray-400 italic">
+						🎲 Multi-pemenang otomatis menggunakan metode Random
+					</div>
+				)}
 			</div>
 
 			<main className="w-full">
@@ -326,36 +307,39 @@ export default function Counter() {
 						⚙️ Pilihan Hadiah
 					</Link>
 
-					{/* Method selector */}
-					<div className="flex items-center gap-2">
-						<label className="text-xl text-white">Metode:</label>
-						<div className="flex rounded-lg overflow-hidden border border-gray-500">
-							<button
-								onClick={() => !isRun && setDrawMethod('random')}
-								disabled={isRun}
-								className={`px-4 py-2 text-lg font-semibold transition-all ${
-									drawMethod === 'random'
-										? 'bg-yellow-500 text-black'
-										: 'bg-gray-700 text-white hover:bg-gray-600'
-								} disabled:opacity-50 disabled:cursor-not-allowed`}
-							>
-								🎲 Random
-							</button>
-							<button
-								onClick={() => !isRun && setDrawMethod('cycle')}
-								disabled={isRun}
-								className={`px-4 py-2 text-lg font-semibold transition-all ${
-									drawMethod === 'cycle'
-										? 'bg-yellow-500 text-black'
-										: 'bg-gray-700 text-white hover:bg-gray-600'
-								} disabled:opacity-50 disabled:cursor-not-allowed`}
-							>
-								🎡 Cycle Roda
-							</button>
+					{/* Selector metode hanya muncul jika winnerCount === 1 */}
+					{winnerCount === 1 && (
+						<div className="flex items-center gap-2">
+							<label className="text-xl text-white">Metode:</label>
+							<div className="flex rounded-lg overflow-hidden border border-gray-500">
+								<button
+									onClick={() => !isRun && setDrawMethod('random')}
+									disabled={isRun}
+									className={`px-4 py-2 text-lg font-semibold transition-all ${
+										drawMethod === 'random'
+											? 'bg-yellow-500 text-black'
+											: 'bg-gray-700 text-white hover:bg-gray-600'
+									} disabled:opacity-50 disabled:cursor-not-allowed`}
+								>
+									🎲 Random
+								</button>
+								<button
+									onClick={() => !isRun && setDrawMethod('cycle')}
+									disabled={isRun}
+									className={`px-4 py-2 text-lg font-semibold transition-all ${
+										drawMethod === 'cycle'
+											? 'bg-yellow-500 text-black'
+											: 'bg-gray-700 text-white hover:bg-gray-600'
+									} disabled:opacity-50 disabled:cursor-not-allowed`}
+								>
+									🎡 Cycle Roda
+								</button>
+							</div>
 						</div>
-					</div>
+					)}
 
-					{drawMethod === 'random' && (
+					{/* Setting Min Play Time — random, 1 pemenang */}
+					{effectiveMethod === 'random' && (
 						<div className="flex items-center gap-2">
 							<label className="text-xl text-white">Min Play Time:</label>
 							<select
@@ -371,7 +355,8 @@ export default function Counter() {
 						</div>
 					)}
 
-					{drawMethod === 'cycle' && (
+					{/* Setting Min Cycle — cycle, 1 pemenang */}
+					{effectiveMethod === 'cycle' && (
 						<div className="flex items-center gap-2">
 							<label className="text-xl text-white">Min Cycle:</label>
 							<select
