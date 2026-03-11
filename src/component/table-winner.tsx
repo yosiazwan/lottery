@@ -133,9 +133,9 @@ export default function TableWinner() {
 						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetWinners}>Reset</button>
 					</div>
 				</div>
-				<div className="mt-4 overflow-y-auto h-150">
+				<div className="mt-4 overflow-y-auto h-150 max-h-500">
 					<table className="min-w-full divide-y divide-gray-700">
-						<thead className="bg-gray-900">
+						<thead className="bg-gray-900 sticky top-0 z-10">
 							<tr>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">Lot</th>
 								<th scope="col" className="px-2 py-2 text-left text-md font-medium text-gray-400 uppercase tracking-wider">ID</th>
