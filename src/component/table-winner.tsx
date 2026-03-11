@@ -133,7 +133,7 @@ export default function TableWinner() {
 						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetWinners}>Reset</button>
 					</div>
 				</div>
-				<div className="mt-4 overflow-y-auto h-150 max-h-500">
+				<div className="mt-4 overflow-y-auto max-h-[600px] border border-gray-700 rounded-lg">
 					<table className="min-w-full divide-y divide-gray-700">
 						<thead className="bg-gray-900 sticky top-0 z-10">
 							<tr>
@@ -158,6 +158,11 @@ export default function TableWinner() {
 									</td>
 								</tr>
 							))}
+							{winners.length === 0 && (
+								<tr>
+									<td colSpan={5} className="px-2 py-4 text-center text-md text-gray-400">Tidak ada pemenang</td>
+								</tr>
+							)}
 						</tbody>
 					</table>
 				</div>
@@ -170,7 +175,7 @@ export default function TableWinner() {
 						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetDropWinners}>Reset</button>
 					</div>
 				</div>
-				<div className="mt-4 max-h-50 overflow-y-auto">
+				<div className="mt-4 max-h-[200px] overflow-y-auto border border-gray-700 rounded-lg">
 					<table className="min-w-full divide-y divide-gray-700">
 						<thead className="bg-gray-900 sticky top-0 z-10">
 							<tr>
@@ -198,6 +203,11 @@ export default function TableWinner() {
 									</td>
 								</tr>
 							))}
+							{dropWinners.length === 0 && (
+								<tr>
+									<td colSpan={5} className="px-2 py-4 text-center text-md text-gray-400">Tidak ada peserta gugur</td>
+								</tr>
+							)}
 						</tbody>
 					</table>
 				</div>
