@@ -197,7 +197,6 @@ export default function Counter() {
 			<main className="w-full">
 				<div className="w-full text-center text-white">
 					{!isRun && <div className="flex flex-col items-center justify-center gap-4">
-						<div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-300 border-t-transparent"></div>
 						<p className="text-xl text-white">Ready...</p>
 					</div>}
 					{isRun && (

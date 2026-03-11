@@ -129,11 +129,11 @@ export default function TableWinner() {
 				<div className="flex flex-row justify-between items-center">
 					<h1 className="font-bold text-xl text-white"><span role="img" aria-label="smile">😊</span> Daftar Pemenang</h1>
 					<div>
-						<button className="px-4 py-1 bg-green-700 hover:cursor-pointer text-white rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadWinnersCSV}>Download (.csv)</button>
-						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetWinners}>Reset</button>
+						<button className="px-4 py-1 bg-green-700 hover:cursor-pointer text-white text-xs rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadWinnersCSV}>Download (.csv)</button>
+						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white text-xs rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetWinners}>Reset</button>
 					</div>
 				</div>
-				<div className="mt-4 overflow-y-auto max-h-[600px] border border-gray-700 rounded-lg">
+				<div className="mt-2 overflow-y-auto max-h-[600px] border border-gray-700 rounded-lg">
 					<table className="min-w-full divide-y divide-gray-700">
 						<thead className="bg-gray-900 sticky top-0 z-10">
 							<tr>
@@ -160,22 +160,22 @@ export default function TableWinner() {
 							))}
 							{winners.length === 0 && (
 								<tr>
-									<td colSpan={5} className="px-2 py-4 text-center text-md text-gray-400">Tidak ada pemenang</td>
+									<td colSpan={5} className="px-2 py-4 text-center text-md text-gray-400">Belum ada pemenang</td>
 								</tr>
 							)}
 						</tbody>
 					</table>
 				</div>
 			</div>
-			<div className="mt-5">
+			<div className="mt-4">
 				<div className="flex flex-row justify-between items-center">
 					<h1 className="font-bold text-xl text-white"><span role="img" aria-label="sad">😢</span> Peserta Gugur</h1>
 					<div>
-						<button className="px-4 py-1 bg-green-700 hover:cursor-pointer text-white rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadDropWinnersCSV}>Download (.csv)</button>
-						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetDropWinners}>Reset</button>
+						<button className="px-4 py-1 bg-green-700 hover:cursor-pointer text-white text-xs rounded-lg hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 mr-2" onClick={downloadDropWinnersCSV}>Download (.csv)</button>
+						<button className="px-4 py-1 bg-red-700 hover:cursor-pointer text-white text-xs rounded-lg hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500" onClick={resetDropWinners}>Reset</button>
 					</div>
 				</div>
-				<div className="mt-4 max-h-[200px] overflow-y-auto border border-gray-700 rounded-lg">
+				<div className="mt-2 max-h-[200px] overflow-y-auto border border-gray-700 rounded-lg">
 					<table className="min-w-full divide-y divide-gray-700">
 						<thead className="bg-gray-900 sticky top-0 z-10">
 							<tr>
@@ -205,7 +205,7 @@ export default function TableWinner() {
 							))}
 							{dropWinners.length === 0 && (
 								<tr>
-									<td colSpan={5} className="px-2 py-4 text-center text-md text-gray-400">Tidak ada peserta gugur</td>
+									<td colSpan={5} className="px-2 py-4 text-center text-md text-gray-400">Belum ada peserta gugur</td>
 								</tr>
 							)}
 						</tbody>
