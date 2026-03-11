@@ -34,7 +34,6 @@ export default function Counter() {
 	const [winnerCount, setWinnerCount] = useState<number>(1);
 
 	const [drawMethod, setDrawMethod] = useState<DrawMethod>('random');
-
 	const [hasCompletedCycle, setHasCompletedCycle] = useState<boolean>(false);
 	const [minCycles, setMinCycles] = useState<number>(2);
 	const [minStopTime, setMinStopTime] = useState<number>(2);
@@ -44,12 +43,19 @@ export default function Counter() {
 	const completedCyclesRef = useRef<number>(0);
 	const pesertaRef = useRef<Peserta[]>([]);
 
-	// Metode efektif: jika winnerCount > 1, paksa random
+	// Ref untuk menyimpan prize agar tidak hilang saat currentPrize di-reset
+	const currentPrizeRef = useRef<string>('');
+
 	const effectiveMethod: DrawMethod = winnerCount > 1 ? 'random' : drawMethod;
 
 	useEffect(() => {
 		pesertaRef.current = peserta;
 	}, [peserta]);
+
+	// Update ref setiap currentPrize berubah (hanya jika tidak kosong)
+	useEffect(() => {
+		if (currentPrize !== '') currentPrizeRef.current = currentPrize;
+	}, [currentPrize]);
 
 	useEffect(() => {
 		const loadPrizes = () => {
@@ -201,7 +207,13 @@ export default function Counter() {
 		if (storedWinners) crossTabBus.emit('winners:updated', JSON.parse(storedWinners) as Winners[]);
 		const dropWinners = localStorage.getItem('doorprize.drop-winners');
 		if (dropWinners) crossTabBus.emit('dropWinners:updated', JSON.parse(dropWinners) as Winners[]);
-		if (type === "win") setCurrentPrize("");
+		// Tidak reset currentPrize di sini — prize di-reset manual saat user tutup modal
+	};
+
+	// Reset prize dipanggil saat modal fireworks ditutup
+	const handleFireworksClose = () => {
+		setCurrentPrize('');
+		currentPrizeRef.current = '';
 	};
 
 	const canStop = isRun && (
@@ -248,8 +260,6 @@ export default function Counter() {
 					/>
 					<span className="text-gray-400 text-lg">orang</span>
 				</div>
-
-				{/* Hanya tampil info metode paksa jika winnerCount > 1 */}
 				{winnerCount > 1 && (
 					<div className="mt-2 text-sm text-gray-400 italic">
 						🎲 Multi-pemenang otomatis menggunakan metode Random
@@ -307,7 +317,6 @@ export default function Counter() {
 						⚙️ Pilihan Hadiah
 					</Link>
 
-					{/* Selector metode hanya muncul jika winnerCount === 1 */}
 					{winnerCount === 1 && (
 						<div className="flex items-center gap-2">
 							<div className="flex rounded-lg overflow-hidden border border-gray-500">
@@ -337,7 +346,6 @@ export default function Counter() {
 						</div>
 					)}
 
-					{/* Setting Min Play Time — random, 1 pemenang */}
 					{effectiveMethod === 'random' && (
 						<div className="flex items-center gap-2">
 							<label className="text-white">Min Play Time:</label>
@@ -354,7 +362,6 @@ export default function Counter() {
 						</div>
 					)}
 
-					{/* Setting Min Cycle — cycle, 1 pemenang */}
 					{effectiveMethod === 'cycle' && (
 						<div className="flex items-center gap-2">
 							<label className="text-white">Min Cycle:</label>
@@ -378,7 +385,8 @@ export default function Counter() {
 					isOpen={showFramework}
 					winners={winners}
 					reload={reloadWinners}
-					prize={currentPrize}
+					onClose={handleFireworksClose}
+					prize={currentPrizeRef.current}
 				/>
 			)}
 		</div>

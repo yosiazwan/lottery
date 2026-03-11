@@ -42,13 +42,16 @@ class Particle {
 	}
 }
 
+const REVEAL_SPEED_MS = 300;
+
 export default function Fireworks({
-	isOpen, winners, reload, prize,
+	isOpen, winners, reload, prize, onClose,
 }: {
 	isOpen: boolean;
 	winners: Peserta[];
 	reload: (type: "win" | "drop") => void;
 	prize: string;
+	onClose?: () => void;  // <-- tambah prop ini
 }) {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const [isRunning] = useState<boolean>(isOpen);
@@ -57,18 +60,33 @@ export default function Fireworks({
 	const [open, setOpen] = useState<boolean>(isOpen);
 	const [gugurSet, setGugurSet] = useState<Set<string>>(new Set());
 
-	// Reveal state
 	const [revealedCount, setRevealedCount] = useState(0);
 	const [isRevealing, setIsRevealing] = useState(true);
 	const revealRef = useRef<NodeJS.Timeout | null>(null);
-
-	const REVEAL_SPEED_MS = 300;
 
 	const count = winners.length;
 	const isMini = count > 16;
 	const allRevealed = revealedCount >= count;
 
-	// Mulai reveal satu per satu
+	// Simpan semua winners ke localStorage saat modal pertama kali terbuka
+	useEffect(() => {
+		if (!isOpen || winners.length === 0) return;
+
+		const storedWinners = localStorage.getItem('doorprize.winners');
+		const winnersData: Winners[] = storedWinners ? JSON.parse(storedWinners) : [];
+
+		winners.forEach(w => {
+			// Hindari duplikat
+			if (!winnersData.some(x => x.id === w.id)) {
+				winnersData.push({ ...w, timestamp: Date.now(), prize });
+			}
+		});
+
+		localStorage.setItem('doorprize.winners', JSON.stringify(winnersData));
+		reload("win");
+	}, [isOpen]);
+
+	// Reveal
 	useEffect(() => {
 		if (!open) return;
 		setRevealedCount(0);
@@ -76,18 +94,17 @@ export default function Fireworks({
 	}, [open]);
 
 	useEffect(() => {
-			if (!isRevealing) return;
-			if (revealedCount >= count) {
-					setIsRevealing(false);
-					return;
-			}
-			revealRef.current = setTimeout(() => {
-					setRevealedCount(prev => prev + 1);
-			}, REVEAL_SPEED_MS); // <-- pakai konstanta
-			return () => { if (revealRef.current) clearTimeout(revealRef.current); };
+		if (!isRevealing) return;
+		if (revealedCount >= count) {
+			setIsRevealing(false);
+			return;
+		}
+		revealRef.current = setTimeout(() => {
+			setRevealedCount(prev => prev + 1);
+		}, REVEAL_SPEED_MS);
+		return () => { if (revealRef.current) clearTimeout(revealRef.current); };
 	}, [revealedCount, isRevealing, count]);
 
-	// Reveal semua sekaligus
 	const revealAll = () => {
 		if (revealRef.current) clearTimeout(revealRef.current);
 		setRevealedCount(count);
@@ -133,31 +150,48 @@ export default function Fireworks({
 		return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
 	}, [isRunning]);
 
-	const toggleGugur = (id: string) => {
-		setGugurSet(prev => {
-			const next = new Set(prev);
-			next.has(id) ? next.delete(id) : next.add(id);
-			return next;
-		});
-	};
+	// Gugur: langsung pindahkan dari winners → drop-winners di localStorage
+	const handleGugur = (w: Peserta) => {
+		if (!confirm(`Gugurkan "${w.name}"?`)) return;
 
-	const handleSimpan = () => {
-		if (!confirm(`Simpan ${count - gugurSet.size} pemenang dan gugurkan ${gugurSet.size} peserta?`)) return;
-
+		// Hapus dari winners
 		const storedWinners = localStorage.getItem('doorprize.winners');
 		const winnersData: Winners[] = storedWinners ? JSON.parse(storedWinners) : [];
+		const updatedWinners = winnersData.filter(x => x.id !== w.id);
+		localStorage.setItem('doorprize.winners', JSON.stringify(updatedWinners));
+
+		// Tambah ke drop-winners
 		const storedDrops = localStorage.getItem('doorprize.drop-winners');
 		const dropsData: Winners[] = storedDrops ? JSON.parse(storedDrops) : [];
-
-		winners.forEach(w => {
-			if (gugurSet.has(w.id)) dropsData.push({ ...w, timestamp: Date.now(), prize });
-			else winnersData.push({ ...w, timestamp: Date.now(), prize });
-		});
-
-		localStorage.setItem('doorprize.winners', JSON.stringify(winnersData));
+		if (!dropsData.some(x => x.id === w.id)) {
+			dropsData.push({ ...w, timestamp: Date.now(), prize });
+		}
 		localStorage.setItem('doorprize.drop-winners', JSON.stringify(dropsData));
-		setOpen(false);
-		reload(gugurSet.size === count ? "drop" : "win");
+
+		// Update UI
+		setGugurSet(prev => { const next = new Set(prev); next.add(w.id); return next; });
+		reload("drop");
+	};
+
+	// Batalkan gugur: kembalikan dari drop-winners → winners
+	const handleBatalGugur = (w: Peserta) => {
+		// Hapus dari drop-winners
+		const storedDrops = localStorage.getItem('doorprize.drop-winners');
+		const dropsData: Winners[] = storedDrops ? JSON.parse(storedDrops) : [];
+		const updatedDrops = dropsData.filter(x => x.id !== w.id);
+		localStorage.setItem('doorprize.drop-winners', JSON.stringify(updatedDrops));
+
+		// Kembalikan ke winners
+		const storedWinners = localStorage.getItem('doorprize.winners');
+		const winnersData: Winners[] = storedWinners ? JSON.parse(storedWinners) : [];
+		if (!winnersData.some(x => x.id === w.id)) {
+			winnersData.push({ ...w, timestamp: Date.now(), prize });
+		}
+		localStorage.setItem('doorprize.winners', JSON.stringify(winnersData));
+
+		// Update UI
+		setGugurSet(prev => { const next = new Set(prev); next.delete(w.id); return next; });
+		reload("win");
 	};
 
 	const WinnerCard = ({ w, index }: { w: Peserta; index: number }) => {
@@ -174,7 +208,7 @@ export default function Fireworks({
 					transform: isVisible ? 'scale(1) translateY(0)' : 'scale(0.5) translateY(20px)',
 					transition: 'opacity 0.4s ease, transform 0.4s ease',
 				}}
-				className={`border border-dashed text-center transition-all duration-300 ${
+				className={`border border-dashed text-center ${
 					isMini ? 'px-2 py-2 rounded-xl' : 'px-4 py-4 rounded-2xl'
 				} ${isGugur ? 'border-red-400 opacity-40' : 'border-yellow-300'}`}
 			>
@@ -189,7 +223,7 @@ export default function Fireworks({
 					{w.id}
 				</div>
 				<button
-					onClick={() => toggleGugur(w.id)}
+					onClick={() => isGugur ? handleBatalGugur(w) : handleGugur(w)}
 					className={`rounded-lg font-semibold transition-all hover:cursor-pointer ${
 						isMini ? 'mt-1 px-2 py-0.5 text-xs rounded' : 'mt-3 px-3 py-1 text-xs rounded-lg'
 					} ${isGugur ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-red-700 text-white hover:bg-red-600'}`}
@@ -220,7 +254,7 @@ export default function Fireworks({
 						))}
 					</div>
 
-					{/* Footer — hanya tampil setelah semua reveal */}
+					{/* Footer — hanya tampil setelah semua reveal, tanpa tombol Simpan */}
 					<div
 						style={{
 							opacity: allRevealed ? 1 : 0,
@@ -236,12 +270,12 @@ export default function Fireworks({
 							🎊 {prize} 🎊
 						</div>
 						<button
-							onClick={handleSimpan}
-							className={`bg-green-700 text-white font-bold rounded-lg shadow-lg hover:cursor-pointer hover:bg-green-600 transition-all ${
+							onClick={() => { setOpen(false); onClose?.(); }}
+							className={`bg-gray-700 text-white font-bold rounded-lg shadow-lg hover:cursor-pointer hover:bg-gray-600 transition-all ${
 								isMini ? 'p-2 px-10 text-lg' : 'p-4 px-16 text-2xl'
 							}`}
 						>
-							Simpan
+							Tutup
 						</button>
 					</div>
 				</div>
