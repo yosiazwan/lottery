@@ -169,7 +169,7 @@ export default function Fireworks({
 				style={{
 					minWidth: isMini ? '120px' : '160px',
 					flex: '1 1 auto',
-					maxWidth: count === 1 ? '500px' : isMini ? '160px' : '220px',
+					maxWidth: count === 1 ? '800px' : isMini ? '160px' : '220px',
 					opacity: isVisible ? 1 : 0,
 					transform: isVisible ? 'scale(1) translateY(0)' : 'scale(0.5) translateY(20px)',
 					transition: 'opacity 0.4s ease, transform 0.4s ease',
@@ -179,12 +179,12 @@ export default function Fireworks({
 				} ${isGugur ? 'border-red-400 opacity-40' : 'border-yellow-300'}`}
 			>
 				<div className={`font-bold text-white leading-tight ${
-					count === 1 ? 'text-5xl' : isMini ? 'text-sm' : 'text-2xl'
+					count === 1 ? 'text-7xl' : isMini ? 'text-sm' : 'text-2xl'
 				}`}>
 					{w.name}
 				</div>
 				<div className={`text-gray-300 mt-1 ${
-					count === 1 ? 'text-3xl' : isMini ? 'text-xs' : 'text-base'
+					count === 1 ? 'text-5xl' : isMini ? 'text-xs' : 'text-base'
 				}`}>
 					{w.id}
 				</div>

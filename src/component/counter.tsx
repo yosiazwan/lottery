@@ -310,7 +310,6 @@ export default function Counter() {
 					{/* Selector metode hanya muncul jika winnerCount === 1 */}
 					{winnerCount === 1 && (
 						<div className="flex items-center gap-2">
-							<label className="text-xl text-white">Metode:</label>
 							<div className="flex rounded-lg overflow-hidden border border-gray-500">
 								<button
 									onClick={() => !isRun && setDrawMethod('random')}
@@ -341,7 +340,7 @@ export default function Counter() {
 					{/* Setting Min Play Time — random, 1 pemenang */}
 					{effectiveMethod === 'random' && (
 						<div className="flex items-center gap-2">
-							<label className="text-xl text-white">Min Play Time:</label>
+							<label className="text-white">Min Play Time:</label>
 							<select
 								className="text-white p-2 rounded bg-gray-400 disabled:opacity-50"
 								onChange={(e) => setMinStopTime(Number(e.target.value))}
@@ -358,7 +357,7 @@ export default function Counter() {
 					{/* Setting Min Cycle — cycle, 1 pemenang */}
 					{effectiveMethod === 'cycle' && (
 						<div className="flex items-center gap-2">
-							<label className="text-xl text-white">Min Cycle:</label>
+							<label className="text-white">Min Cycle:</label>
 							<select
 								className="text-white p-2 rounded bg-gray-400 disabled:opacity-50"
 								onChange={(e) => setMinCycles(Number(e.target.value))}
