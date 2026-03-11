@@ -30,6 +30,8 @@ export default function Counter() {
 	const [showFramework, setShowFramework] = useState<boolean>(false);
 	const [prizes, setPrizes] = useState<Prize[]>([]);
 	const [currentPrize, setCurrentPrize] = useState<string>('');
+	const [winners, setWinners] = useState<Peserta[]>([]);
+	const [winnerCount, setWinnerCount] = useState<number>(1);
 
 	// Method selector
 	const [drawMethod, setDrawMethod] = useState<DrawMethod>('cycle');
@@ -44,6 +46,12 @@ export default function Counter() {
 	const cycleIndexRef = useRef<number>(0);
 	const shuffledRef = useRef<Peserta[]>([]);
 	const completedCyclesRef = useRef<number>(0);
+	const pesertaRef = useRef<Peserta[]>([]);
+
+	// Sync pesertaRef setiap peserta berubah
+	useEffect(() => {
+		pesertaRef.current = peserta;
+	}, [peserta]);
 
 	// Load prizes + cross tab listener
 	useEffect(() => {
@@ -63,9 +71,9 @@ export default function Counter() {
 		const rebuildPeserta = (pesertaData: Peserta[]) => {
 			let filteredPeserta = [...pesertaData];
 
-			const winners = localStorage.getItem('doorprize.winners');
-			if (winners) {
-				const parsedWinners = JSON.parse(winners) as Winners[];
+			const storedWinners = localStorage.getItem('doorprize.winners');
+			if (storedWinners) {
+				const parsedWinners = JSON.parse(storedWinners) as Winners[];
 				filteredPeserta = filteredPeserta.filter(p => !parsedWinners.map(w => w.id).includes(p.id));
 			}
 
@@ -128,10 +136,17 @@ export default function Counter() {
 		setTime(0);
 		setHasCompletedCycle(false);
 		completedCyclesRef.current = 0;
+		setWinners([]);
 
 		if (peserta.length === 0) {
 			setIsRun(false);
 			alert('Tidak ada peserta');
+			return;
+		}
+
+		if (peserta.length < winnerCount) {
+			setIsRun(false);
+			alert(`Peserta tidak cukup. Butuh ${winnerCount}, tersedia ${peserta.length}`);
 			return;
 		}
 
@@ -144,7 +159,6 @@ export default function Counter() {
 		let intervalId: NodeJS.Timeout;
 
 		if (drawMethod === 'cycle') {
-			// Cycle mode: shuffle sekali, putar berurutan
 			shuffledRef.current = shuffleArray([...peserta]);
 			cycleIndexRef.current = 0;
 
@@ -163,10 +177,9 @@ export default function Counter() {
 				}
 			}, intervalTime);
 		} else {
-			// Random mode: acak setiap tick
 			intervalId = setInterval(() => {
-				const randomIndex = getSafeRandomIndex(peserta.length);
-				setRandomPeserta(peserta[randomIndex]);
+				const randomIndex = getSafeRandomIndex(pesertaRef.current.length);
+				setRandomPeserta(pesertaRef.current[randomIndex]);
 			}, intervalTime);
 		}
 
@@ -180,11 +193,34 @@ export default function Counter() {
 			clearInterval(intervalId);
 			clearInterval(timerId);
 		};
-	}, [isRun, currentPrize, peserta, drawMethod, minCycles]);
+	}, [isRun, currentPrize, peserta, drawMethod, minCycles, winnerCount]);
+
+	// Saat Stop, ambil N pemenang dari posisi roda saat ini
+	const handleStop = () => {
+		if (!canStop) return;
+
+		let selected: Peserta[] = [];
+
+		if (drawMethod === 'cycle') {
+			// Ambil dari posisi cycle saat ini, maju N slot
+			const arr = shuffledRef.current;
+			const startIdx = cycleIndexRef.current;
+			for (let i = 0; i < winnerCount; i++) {
+				selected.push(arr[(startIdx + i) % arr.length]);
+			}
+		} else {
+			// Random mode: ambil N unik secara acak dari peserta
+			const shuffled = shuffleArray([...pesertaRef.current]);
+			selected = shuffled.slice(0, winnerCount);
+		}
+
+		setWinners(selected);
+		setIsRun(false);
+	};
 
 	const reloadWinners = (type: "win" | "drop") => {
-		const winners = localStorage.getItem('doorprize.winners');
-		if (winners) crossTabBus.emit('winners:updated', JSON.parse(winners) as Winners[]);
+		const storedWinners = localStorage.getItem('doorprize.winners');
+		if (storedWinners) crossTabBus.emit('winners:updated', JSON.parse(storedWinners) as Winners[]);
 
 		const dropWinners = localStorage.getItem('doorprize.drop-winners');
 		if (dropWinners) crossTabBus.emit('dropWinners:updated', JSON.parse(dropWinners) as Winners[]);
@@ -192,7 +228,6 @@ export default function Counter() {
 		if (type === "win") setCurrentPrize("");
 	};
 
-	// Kondisi boleh stop
 	const canStop = isRun && (
 		drawMethod === 'random'
 			? (time / 1000) >= minStopTime
@@ -210,16 +245,34 @@ export default function Counter() {
 				</div>
 				<div className="mt-10 text-2xl font-bold text-yellow-400">Hadiah Yang Diundi</div>
 				<div className="mt-2 border border-dashed border-yellow-500 px-10 py-2 rounded-lg text-center">
-					<select
-						className="text-white text-center p-2 rounded bg-black appearance-none text-3xl font-bold uppercase"
-						onChange={(e) => setCurrentPrize(e.target.value)}
-						value={currentPrize}
-					>
-						<option value="">-- Pilih Hadiah --</option>
-						{prizes.map((prize, index) => (
-							<option key={index} value={prize.name}>{prize.name}</option>
-						))}
-					</select>
+						<select
+								className="text-white text-center p-2 rounded bg-black appearance-none text-3xl font-bold uppercase"
+								onChange={(e) => setCurrentPrize(e.target.value)}
+								value={currentPrize}
+						>
+								<option value="">-- Pilih Hadiah --</option>
+								{prizes.map((prize, index) => (
+										<option key={index} value={prize.name}>{prize.name}</option>
+								))}
+						</select>
+				</div>
+
+				{/* Jumlah pemenang — di bawah pilihan hadiah */}
+				<div className="mt-6 flex items-center gap-3">
+						<label className="text-xl text-yellow-400 font-bold">Jumlah Pemenang:</label>
+						<input
+								type="number"
+								min={1}
+								max={peserta.length || 1}
+								value={winnerCount}
+								disabled={isRun}
+								onChange={(e) => {
+										const val = Math.max(1, parseInt(e.target.value) || 1);
+										setWinnerCount(val);
+								}}
+								className="w-20 text-center text-2xl font-bold text-white bg-black border border-yellow-500 rounded-lg p-2 disabled:opacity-50"
+						/>
+						<span className="text-gray-400 text-lg">orang</span>
 				</div>
 			</div>
 
@@ -255,7 +308,7 @@ export default function Counter() {
 					)}
 					{isRun && (
 						<button
-							onClick={() => canStop && setIsRun(false)}
+							onClick={handleStop}
 							className={`px-12 py-4 text-white text-4xl font-bold rounded-full w-fit transition-all duration-300 ${
 								canStop
 									? 'bg-red-500 hover:cursor-pointer'
@@ -268,7 +321,6 @@ export default function Counter() {
 					)}
 				</div>
 
-				{/* Settings row */}
 				<div className="text-center text-white mt-6 flex flex-row items-center justify-center gap-8 flex-wrap">
 					<Link href="/hadiah" className="hover:underline" target="_blank">
 						⚙️ Pilihan Hadiah
@@ -276,6 +328,7 @@ export default function Counter() {
 
 					{/* Method selector */}
 					<div className="flex items-center gap-2">
+						<label className="text-xl text-white">Metode:</label>
 						<div className="flex rounded-lg overflow-hidden border border-gray-500">
 							<button
 								onClick={() => !isRun && setDrawMethod('random')}
@@ -302,7 +355,6 @@ export default function Counter() {
 						</div>
 					</div>
 
-					{/* Conditional settings per method */}
 					{drawMethod === 'random' && (
 						<div className="flex items-center gap-2">
 							<label className="text-xl text-white">Min Play Time:</label>
@@ -337,10 +389,10 @@ export default function Counter() {
 				</div>
 			</footer>
 
-			{!isRun && time > 0 && (
+			{!isRun && time > 0 && winners.length > 0 && (
 				<Fireworks
 					isOpen={showFramework}
-					winner={randomPeserta}
+					winners={winners}
 					reload={reloadWinners}
 					prize={currentPrize}
 				/>
