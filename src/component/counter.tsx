@@ -33,7 +33,7 @@ export default function Counter() {
 	const [winners, setWinners] = useState<Peserta[]>([]);
 	const [winnerCount, setWinnerCount] = useState<number>(1);
 
-	const [drawMethod, setDrawMethod] = useState<DrawMethod>('cycle');
+	const [drawMethod, setDrawMethod] = useState<DrawMethod>('random');
 
 	const [hasCompletedCycle, setHasCompletedCycle] = useState<boolean>(false);
 	const [minCycles, setMinCycles] = useState<number>(2);
