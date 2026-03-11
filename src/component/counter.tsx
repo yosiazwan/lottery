@@ -5,8 +5,7 @@ import Fireworks from "./firework";
 import Link from "next/link";
 import { Prize } from "../app/hadiah/page";
 import { crossTabBus } from "@/libs/crossTabEvent";
-import { getRandomInt, getSafeRandomIndex } from "@/libs/number";
-import { shuffleArray } from "@/libs/array";
+import { getSafeRandomIndex } from "@/libs/number";
 import { Peserta, Winners } from "@/libs/type";
 
 export default function Counter({
@@ -19,6 +18,7 @@ export default function Counter({
 	setDropWinnersData: (data: Winners[]) => void
 }) {
 	const intervalTime = 10;
+
 	const [randomPeserta, setRandomPeserta] = useState<Peserta>({ id: '', name: '' });
 	const [isRun, setIsRun] = useState(false);
 	const [peserta, setPeserta] = useState<Peserta[]>(pesertaData);
@@ -29,84 +29,86 @@ export default function Counter({
 	const [prizes, setPrizes] = useState<Prize[]>([]);
 	const [currentPrize, setCurrentPrize] = useState<string>('');
 
-	const acakData = (data: any) => {
-		let newData = data;
-
-		for(let i=0; i < getRandomInt(5, 15); i++) {
-			newData = shuffleArray(newData);
-		}
-		localStorage.setItem("doorprize.peserta", JSON.stringify(newData));
-		setPeserta(newData);
-	};
-
+	// Load prizes + cross tab listener
 	useEffect(() => {
-		const prizeDatas = localStorage.getItem('doorprize.prizes');
-		setPrizes(prizeDatas ? JSON.parse(prizeDatas) : []);
-
-		const handlePrizeUpdate = async (data: { name: string }) => {
-			await new Promise(resolve => setTimeout(resolve, 100)); // Delay untuk memastikan localStorage sudah terupdate
+		const loadPrizes = () => {
 			const prizeDatas = localStorage.getItem('doorprize.prizes');
 			setPrizes(prizeDatas ? JSON.parse(prizeDatas) : []);
 		};
+		loadPrizes();
+
+		const handlePrizeUpdate = () => {
+			setTimeout(loadPrizes, 100);
+		};
 
 		crossTabBus.on('prize:updated', handlePrizeUpdate);
-
-		return () => {
-			crossTabBus.off('prize:updated', handlePrizeUpdate);
-		};
+		return () => crossTabBus.off('prize:updated', handlePrizeUpdate);
 	}, []);
 
+	// Filter peserta (hapus winners & drop-winners)
 	useEffect(() => {
-		setPeserta(pesertaData);
+		let filteredPeserta = [...pesertaData];
+
 		const winners = localStorage.getItem('doorprize.winners');
 		if (winners) {
 			const parsedWinners = JSON.parse(winners) as Winners[];
 			const pesertaIds = parsedWinners.map(winner => winner.id);
-			setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
+			filteredPeserta = filteredPeserta.filter(peserta => !pesertaIds.includes(peserta.id));
 		}
 
 		const dropWinners = localStorage.getItem('doorprize.drop-winners');
 		if (dropWinners) {
 			const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
 			const pesertaIds = parsedDropWinners.map(winner => winner.id);
-			setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
+			filteredPeserta = filteredPeserta.filter(peserta => !pesertaIds.includes(peserta.id));
 		}
+
+		setPeserta(filteredPeserta);
 	}, [pesertaData]);
 
+	// Main interval effect (pengundian)
 	useEffect(() => {
-		if (isRun) {
-			setTime(0);
-			if (peserta.length === 0) {
-					setIsRun(false);
-					alert('Tidak ada peserta');
-					return;
+		if (!isRun) {
+			if (random) {
+				clearInterval(random);
+				setRandom(null);
 			}
-
-			if (currentPrize === '') {
-					setIsRun(false);
-					alert('Pilih undian terlebih dahulu');
-					return;
-			}
-
-			const intervalId = setInterval(() => {
-					const randomIndex = getSafeRandomIndex(peserta.length);
-					setRandomPeserta(peserta[randomIndex]);
-			}, intervalTime);
-			setRandom(intervalId);
-
-			const timerId = setInterval(() => {
-					setTime(prev => prev + intervalTime);
-			}, intervalTime);
-
-			return () => {
-					clearInterval(intervalId);
-					clearInterval(timerId);
-			};
-		} else {
-			clearInterval(random as NodeJS.Timeout);
 			setShowFramework(true);
+			return;
 		}
-	}, [isRun, peserta]);
+
+		// === START UNDIAAN ===
+		setTime(0);
+
+		if (peserta.length === 0) {
+			setIsRun(false);
+			alert('Tidak ada peserta');
+			return;
+		}
+
+		if (currentPrize === '') {
+			setIsRun(false);
+			alert('Pilih undian terlebih dahulu');
+			return;
+		}
+
+		const intervalId = setInterval(() => {
+			const randomIndex = getSafeRandomIndex(peserta.length);
+			setRandomPeserta(peserta[randomIndex]);
+		}, intervalTime);
+
+		const timerId = setInterval(() => {
+			setTime(prev => prev + intervalTime);
+		}, intervalTime);
+
+		setRandom(intervalId);
+
+		// Cleanup saat effect berubah / component unmount
+		return () => {
+			clearInterval(intervalId);
+			clearInterval(timerId);
+		};
+	}, [isRun, currentPrize, peserta]);
 
 	const reloadWinners = (type: "win" | "drop") => {
 		const winners = localStorage.getItem('doorprize.winners');
@@ -125,75 +127,103 @@ export default function Counter({
 			setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
 		}
 
-		if(type === "win") {
+		if (type === "win") {
 			setCurrentPrize("");
 		}
-	}
+	};
 
 	return (
 		<div className="grid items-center justify-items-center min-h-screen p-0 m-0">
 			<div className="absolute top-0 w-fit mt-10 flex flex-col items-center">
-					<h1 className="text-6xl font-bold text-yellow-300 flex items-center">
-						<span className="mr-2">🎁</span> DoorPrize
-					</h1>
-					<div className="w-full text-center mt-10 text-4xl text-white">Jumlah Peserta: <b>{peserta.length}</b></div>
-					<div className="mt-10 text-2xl font-bold text-yellow-400">Hadiah Yang Diundi</div>
-					<div className="mt-2 border border-dashed border-yellow-500 px-10 py-2 rounded-lg text-center">
+				<h1 className="text-6xl font-bold text-yellow-300 flex items-center">
+					<span className="mr-2">🎁</span> DoorPrize
+				</h1>
+				<div className="w-full text-center mt-10 text-4xl text-white">
+					Jumlah Peserta: <b>{peserta.length}</b>
+				</div>
+				<div className="mt-10 text-2xl font-bold text-yellow-400">Hadiah Yang Diundi</div>
+				<div className="mt-2 border border-dashed border-yellow-500 px-10 py-2 rounded-lg text-center">
+					<select
+						className="text-white text-center p-2 rounded bg-black appearance-none text-3xl font-bold uppercase"
+						onChange={(e) => {
+							setCurrentPrize(e.target.value);
+						}}
+						value={currentPrize}
+					>
+						<option value="">-- Pilih Hadiah --</option>
+						{prizes.map((prize, index) => (
+							<option key={index} value={prize.name}>
+								{prize.name}
+							</option>
+						))}
+					</select>
+				</div>
+			</div>
+
+			<main className="w-full">
+				<div className="w-full text-center text-white">
+					{!isRun && <div>Waiting...</div>}
+					{isRun && (
+						<div>
+							<div className="text-5xl font-bold text-yellow-600 mt-5">{randomPeserta.id}</div>
+							<div className="text-5xl font-bold text-yellow-300 mt-2">{randomPeserta.name}</div>
+						</div>
+					)}
+				</div>
+			</main>
+
+			<footer className="absolute bottom-0 w-full mb-10">
+				<div className="flex justify-center w-full mb-5 text-xl text-white">
+					Play Time :{" "}
+					<b className="mx-2 text-2xl text-white"> {(time / 1000).toFixed(2)} </b> Detik
+				</div>
+				<div className="flex justify-center w-full">
+					<button
+						onClick={() => setIsRun(!isRun)}
+						className={`${isRun ? `bg-red-500` : `bg-blue-500`} px-12 hover:cursor-pointer py-4 text-white text-4xl font-bold rounded-full w-fit ${
+							isRun && (time / 1000) < minStopTime ? "hidden" : ""
+						}`}
+					>
+						{isRun ? (
+							<span>
+								Stop <span className="ml-2">⏹️</span>
+							</span>
+						) : (
+							<span>
+								Play <span className="ml-2">▶️</span>
+							</span>
+						)}
+					</button>
+				</div>
+				<div className="text-center text-white mt-15 flex flex-row items-center justify-center gap-10">
+					<Link href="/hadiah" className="hover:underline" target="_blank">
+						⚙️ Pilihan Hadiah
+					</Link>
+					<div className="flex items-center">
+						<label className="text-xl text-white mr-2">Play Time:</label>
 						<select
-								className="text-white text-center p-2 rounded bg-black appearance-none text-3xl font-bold uppercase"
-								onChange={(e) => {
-										setCurrentPrize(e.target.value);
-								}}
-								value={currentPrize}
+							className="text-white p-2 rounded bg-gray-400"
+							onChange={(e) => setMinStopTime(Number(e.target.value))}
+							value={minStopTime}
 						>
-								<option value="">-- Pilih Hadiah --</option>
-								{prizes.map((prize, index) => (
-										<option key={index} value={prize.name}>{prize.name}</option>
-								))}
+							{[1, 2, 3, 4, 5].map((num) => (
+								<option key={num} value={num}>
+									{num}
+								</option>
+							))}
 						</select>
 					</div>
 				</div>
-				<main className="w-full">
-					<div className="w-full text-center text-white">
-							{!isRun && <div>Waiting...</div>}
-							{isRun && (
-									<div>
-											<div className="text-5xl font-bold text-yellow-600 mt-5">{randomPeserta.id}</div>
-											<div className="text-5xl font-bold text-yellow-300 mt-2">{randomPeserta.name}</div>
-									</div>
-							)}
-					</div>
-				</main>
-				<footer className="absolute bottom-0 w-full mb-10">
-					<div className="flex justify-center w-full mb-5 text-xl text-white">
-						Play Time : <b className="mx-2 text-2xl text-white"> {(time / 1000).toFixed(2)} </b> Detik
-					</div>
-					<div className="flex justify-center w-full">
-						<button
-								onClick={() => setIsRun(!isRun)}
-								className={`${isRun ? `bg-red-500` : `bg-blue-500`} px-18 hover: cursor-pointer py-4 text-white text-4xl font-bold rounded-full w-fit ${isRun && ((time / 1000) < minStopTime) ? 'hidden' : ''}`}>
-								{isRun ? <span>Stop <span className="ml-2">⏹️</span></span> : <span>Play <span className="ml-2">▶️</span></span>}
-						</button>
-					</div>
-					<div className="text-center text-white mt-15 flex flex-row items-center justify-center gap-10">
-						<Link href="/hadiah" className="hover:underline" target="_blank">⚙️ Pilihan Hadiah</Link>
-						<div className="flex items-center">
-							<label className="text-xl text-white mr-2">Play Time:</label>
-							<select
-								className="text-white p-2 rounde bg-gray-400"
-								onChange={(e) => setMinStopTime(Number(e.target.value))}
-								value={minStopTime}
-						>
-								{[1,2,3,4,5].map((num) => (
-									<option key={num} value={num}>
-										{num}
-									</option>
-								))}
-							</select>
-						</div>
-					</div>
-				</footer>
-				{!isRun && time > 0 && <Fireworks isOpen={showFramework} winner={randomPeserta} reload={reloadWinners} prize={currentPrize} />}
+			</footer>
+
+			{!isRun && time > 0 && (
+				<Fireworks
+					isOpen={showFramework}
+					winner={randomPeserta}
+					reload={reloadWinners}
+					prize={currentPrize}
+				/>
+			)}
 		</div>
 	);
 }
