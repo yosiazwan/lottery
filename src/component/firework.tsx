@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
-import { Peserta, Winners } from "./counter";
 import { Dancing_Script } from "next/font/google";
+import { Peserta, Winners } from "@/libs/type";
 
 const gFont = Dancing_Script({ subsets: ["latin"] });
 

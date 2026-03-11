@@ -8,24 +8,16 @@ import { crossTabBus } from "@/libs/crossTabEvent";
 import { getSafeRandomIndex } from "@/libs/number";
 import { Peserta, Winners } from "@/libs/type";
 
-export default function Counter({
-	pesertaData,
-	setWinnersData,
-	setDropWinnersData
-}: {
-	pesertaData: Peserta[],
-	setWinnersData: (data: Winners[]) => void,
-	setDropWinnersData: (data: Winners[]) => void
-}) {
+export default function Counter() {
 	const intervalTime = 10;
 
 	const [randomPeserta, setRandomPeserta] = useState<Peserta>({ id: '', name: '' });
 	const [isRun, setIsRun] = useState(false);
-	const [peserta, setPeserta] = useState<Peserta[]>(pesertaData);
+	const [peserta, setPeserta] = useState<Peserta[]>([]);
 	const [random, setRandom] = useState<NodeJS.Timeout | null>(null);
 	const [time, setTime] = useState<number>(0);
 	const [showFramework, setShowFramework] = useState<boolean>(false);
-	const [minStopTime, setMinStopTime] = useState<number>(1);
+	const [minStopTime, setMinStopTime] = useState<number>(2);
 	const [prizes, setPrizes] = useState<Prize[]>([]);
 	const [currentPrize, setCurrentPrize] = useState<string>('');
 
@@ -37,34 +29,82 @@ export default function Counter({
 		};
 		loadPrizes();
 
-		const handlePrizeUpdate = () => {
-			setTimeout(loadPrizes, 100);
+		const handlePrizeUpdate = (data: Prize[]) => {
+			setPrizes(data);
 		};
 
 		crossTabBus.on('prize:updated', handlePrizeUpdate);
 		return () => crossTabBus.off('prize:updated', handlePrizeUpdate);
 	}, []);
 
-	// Filter peserta (hapus winners & drop-winners)
+	// Load peserta from localStorage dan filter awal
 	useEffect(() => {
-		let filteredPeserta = [...pesertaData];
+		const rebuildPeserta = (pesertaData: Peserta[]) => {
+			let filteredPeserta = [...pesertaData];
 
-		const winners = localStorage.getItem('doorprize.winners');
-		if (winners) {
-			const parsedWinners = JSON.parse(winners) as Winners[];
-			const pesertaIds = parsedWinners.map(winner => winner.id);
-			filteredPeserta = filteredPeserta.filter(peserta => !pesertaIds.includes(peserta.id));
+			const winners = localStorage.getItem('doorprize.winners');
+			if (winners) {
+				const parsedWinners = JSON.parse(winners) as Winners[];
+				const pesertaIds = parsedWinners.map(winner => winner.id);
+				filteredPeserta = filteredPeserta.filter(p => !pesertaIds.includes(p.id));
+			}
+
+			const dropWinners = localStorage.getItem('doorprize.drop-winners');
+			if (dropWinners) {
+				const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
+				const pesertaIds = parsedDropWinners.map(winner => winner.id);
+				filteredPeserta = filteredPeserta.filter(p => !pesertaIds.includes(p.id));
+			}
+
+			setPeserta(filteredPeserta);
+		};
+
+		// Load dari localStorage saat pertama kali
+		const storedPeserta = localStorage.getItem('doorprize.peserta');
+		if (storedPeserta) {
+			const parsed = JSON.parse(storedPeserta) as Peserta[];
+			rebuildPeserta(parsed);
 		}
 
-		const dropWinners = localStorage.getItem('doorprize.drop-winners');
-		if (dropWinners) {
-			const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
-			const pesertaIds = parsedDropWinners.map(winner => winner.id);
-			filteredPeserta = filteredPeserta.filter(peserta => !pesertaIds.includes(peserta.id));
-		}
+		// Listen ke event dari table-peserta
+		const onPesertaUpdated = (data: Peserta[]) => {
+			rebuildPeserta(data);
+		};
 
-		setPeserta(filteredPeserta);
-	}, [pesertaData]);
+		crossTabBus.on('peserta:updated', onPesertaUpdated);
+		return () => crossTabBus.off('peserta:updated', onPesertaUpdated);
+	}, []);
+
+	// Listen eventBus untuk sync reaktif dari TableWinner
+	useEffect(() => {
+		const rebuildPesertaFromWinners = (updatedWinners: Winners[], updatedDrops: Winners[]) => {
+			const storedPeserta = localStorage.getItem('doorprize.peserta');
+			const allPeserta: Peserta[] = storedPeserta ? JSON.parse(storedPeserta) : [];
+
+			const winnerIds = new Set(updatedWinners.map(w => w.id));
+			const dropIds = new Set(updatedDrops.map(w => w.id));
+			setPeserta(allPeserta.filter(p => !winnerIds.has(p.id) && !dropIds.has(p.id)));
+		};
+
+		const onWinnersUpdated = (updatedWinners: Winners[]) => {
+			const stored = localStorage.getItem('doorprize.drop-winners');
+			const drops: Winners[] = stored ? JSON.parse(stored) : [];
+			rebuildPesertaFromWinners(updatedWinners, drops);
+		};
+
+		const onDropUpdated = (updatedDrops: Winners[]) => {
+			const stored = localStorage.getItem('doorprize.winners');
+			const wins: Winners[] = stored ? JSON.parse(stored) : [];
+			rebuildPesertaFromWinners(wins, updatedDrops);
+		};
+
+		crossTabBus.on('winners:updated', onWinnersUpdated);
+		crossTabBus.on('dropWinners:updated', onDropUpdated);
+		return () => {
+			crossTabBus.off('winners:updated', onWinnersUpdated);
+			crossTabBus.off('dropWinners:updated', onDropUpdated);
+		};
+	}, []);
 
 	// Main interval effect (pengundian)
 	useEffect(() => {
@@ -77,7 +117,6 @@ export default function Counter({
 			return;
 		}
 
-		// === START UNDIAAN ===
 		setTime(0);
 
 		if (peserta.length === 0) {
@@ -103,7 +142,6 @@ export default function Counter({
 
 		setRandom(intervalId);
 
-		// Cleanup saat effect berubah / component unmount
 		return () => {
 			clearInterval(intervalId);
 			clearInterval(timerId);
@@ -114,17 +152,13 @@ export default function Counter({
 		const winners = localStorage.getItem('doorprize.winners');
 		if (winners) {
 			const parsedWinners = JSON.parse(winners) as Winners[];
-			setWinnersData(parsedWinners);
-			const pesertaIds = parsedWinners.map(winner => winner.id);
-			setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
+			crossTabBus.emit('winners:updated', parsedWinners);
 		}
 
 		const dropWinners = localStorage.getItem('doorprize.drop-winners');
 		if (dropWinners) {
 			const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
-			setDropWinnersData(parsedDropWinners);
-			const pesertaIds = parsedDropWinners.map(winner => winner.id);
-			setPeserta(prev => prev.filter(peserta => !pesertaIds.includes(peserta.id)));
+			crossTabBus.emit('dropWinners:updated', parsedDropWinners);
 		}
 
 		if (type === "win") {
@@ -162,7 +196,10 @@ export default function Counter({
 
 			<main className="w-full">
 				<div className="w-full text-center text-white">
-					{!isRun && <div>Waiting...</div>}
+					{!isRun && <div className="flex flex-col items-center justify-center gap-4">
+						<div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-300 border-t-transparent"></div>
+						<p className="text-xl text-white">Ready...</p>
+					</div>}
 					{isRun && (
 						<div>
 							<div className="text-5xl font-bold text-yellow-600 mt-5">{randomPeserta.id}</div>
@@ -185,13 +222,9 @@ export default function Counter({
 						}`}
 					>
 						{isRun ? (
-							<span>
-								Stop <span className="ml-2">⏹️</span>
-							</span>
+							<span>Stop <span className="ml-2">⏹️</span></span>
 						) : (
-							<span>
-								Play <span className="ml-2">▶️</span>
-							</span>
+							<span>Play <span className="ml-2">▶️</span></span>
 						)}
 					</button>
 				</div>
@@ -200,7 +233,7 @@ export default function Counter({
 						⚙️ Pilihan Hadiah
 					</Link>
 					<div className="flex items-center">
-						<label className="text-xl text-white mr-2">Play Time:</label>
+						<label className="text-xl text-white mr-2">Min Play Time:</label>
 						<select
 							className="text-white p-2 rounded bg-gray-400"
 							onChange={(e) => setMinStopTime(Number(e.target.value))}

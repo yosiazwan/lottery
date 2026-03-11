@@ -20,11 +20,11 @@ export default function HadiahPage() {
 
   useEffect(() => {
     localStorage.setItem('doorprize.prizes', JSON.stringify(prizes));
+    crossTabBus.emit('prize:updated', prizes);
   }, [prizes]);
 
   const handleAddPrize = () => {
     setPrizes([...prizes, { name }]);
-    crossTabBus.emit('prize:updated', { name: name });
     setName('');
   };
 

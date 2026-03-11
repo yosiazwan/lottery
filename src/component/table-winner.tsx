@@ -1,27 +1,17 @@
 'use client';
 import { useEffect, useState } from "react";
-import { Peserta, Winners } from "./counter";
-import { eventBus } from "@/libs/events";
+import { crossTabBus } from "@/libs/crossTabEvent";
+import { Peserta, Winners } from "@/libs/type";
 
-export default function TableWinner({
-	winnersData,
-	dropWinnersData,
-	setPesertaData,
-	pesertaData
-}: {
-	winnersData: Winners[],
-	dropWinnersData: Winners[],
-	setPesertaData: (data: Peserta[]) => void,
-	pesertaData: Peserta[] }) {
-
-	const [winners, setWinners] = useState<Winners[]>(winnersData);
-	const [dropWinners, setDropWinners] = useState<Winners[]>(dropWinnersData);
+export default function TableWinner() {
+	const [winners, setWinners] = useState<Winners[]>([]);
+	const [dropWinners, setDropWinners] = useState<Winners[]>([]);
 
 	const resetWinners = () => {
 		if (confirm('Are you sure you want to reset the winners?')) {
 			localStorage.removeItem('doorprize.winners');
 			setWinners([]);
-			window.location.reload();
+			crossTabBus.emit('winners:updated', []);
 		}
 	}
 
@@ -29,7 +19,7 @@ export default function TableWinner({
 		if (confirm('Are you sure you want to reset peserta gugur?')) {
 			localStorage.removeItem('doorprize.drop-winners');
 			setDropWinners([]);
-			window.location.reload();
+			crossTabBus.emit('dropWinners:updated', []);
 		}
 	}
 
@@ -44,7 +34,8 @@ export default function TableWinner({
 			setDropWinners(updatedDropWinners);
 			localStorage.setItem('doorprize.drop-winners', JSON.stringify(updatedDropWinners));
 
-			window.location.reload();
+		crossTabBus.emit('winners:updated', updatedWinners);
+		crossTabBus.emit('dropWinners:updated', updatedDropWinners);
 		}
 	}
 
@@ -53,7 +44,7 @@ export default function TableWinner({
 			const updatedDropWinners = dropWinners.filter((_, i) => i !== index);
 			setDropWinners(updatedDropWinners);
 			localStorage.setItem('doorprize.drop-winners', JSON.stringify(updatedDropWinners));
-			window.location.reload();
+		crossTabBus.emit('dropWinners:updated', updatedDropWinners);
 		}
 	}
 
@@ -89,7 +80,7 @@ export default function TableWinner({
 		const rows = dropWinners.map((peserta, index) => [
 			`#${index + 1}`,
 			peserta.id,
-			`"${peserta.name}"`, // Add quotes to handle commas in names
+			`"${peserta.name}"`,
 			peserta.prize,
 			new Date(peserta.timestamp).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 		]);
@@ -111,20 +102,26 @@ export default function TableWinner({
 	}
 
 	useEffect(() => {
-		const winners = localStorage.getItem('doorprize.winners');
-		if (winners) {
-			const parsedWinners = JSON.parse(winners) as Winners[];
-			setWinners(parsedWinners);
-		}
-	}, [winnersData]);
+		const stored = localStorage.getItem('doorprize.winners');
+		setWinners(stored ? JSON.parse(stored) : []);
+	}, []);
 
 	useEffect(() => {
-		const dropWinners = localStorage.getItem('doorprize.drop-winners');
-		if (dropWinners) {
-			const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
-			setDropWinners(parsedDropWinners);
-		}
-	}, [dropWinnersData]);
+		const stored = localStorage.getItem('doorprize.drop-winners');
+		setDropWinners(stored ? JSON.parse(stored) : []);
+	}, []);
+
+	useEffect(() => {
+		const onWinnersUpdated = (data: Winners[]) => setWinners(data);
+		const onDropUpdated = (data: Winners[]) => setDropWinners(data);
+
+		crossTabBus.on('winners:updated', onWinnersUpdated);
+		crossTabBus.on('dropWinners:updated', onDropUpdated);
+		return () => {
+			crossTabBus.off('winners:updated', onWinnersUpdated);
+			crossTabBus.off('dropWinners:updated', onDropUpdated);
+		};
+	}, []);
 
 	return (
 		<div>
