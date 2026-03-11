@@ -1,12 +1,20 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Fireworks from "./firework";
 import Link from "next/link";
 import { Prize } from "../app/hadiah/page";
 import { crossTabBus } from "@/libs/crossTabEvent";
-import { getSafeRandomIndex } from "@/libs/number";
 import { Peserta, Winners } from "@/libs/type";
+
+function shuffleArray<T>(array: T[]): T[] {
+	const arr = [...array];
+	for (let i = arr.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[arr[i], arr[j]] = [arr[j], arr[i]];
+	}
+	return arr;
+}
 
 export default function Counter() {
 	const intervalTime = 10;
@@ -17,9 +25,14 @@ export default function Counter() {
 	const [random, setRandom] = useState<NodeJS.Timeout | null>(null);
 	const [time, setTime] = useState<number>(0);
 	const [showFramework, setShowFramework] = useState<boolean>(false);
-	const [minStopTime, setMinStopTime] = useState<number>(2);
 	const [prizes, setPrizes] = useState<Prize[]>([]);
 	const [currentPrize, setCurrentPrize] = useState<string>('');
+	const [hasCompletedCycle, setHasCompletedCycle] = useState<boolean>(false);
+	const [minCycles, setMinCycles] = useState<number>(2);
+
+	const cycleIndexRef = useRef<number>(0);
+	const shuffledRef = useRef<Peserta[]>([]);
+	const completedCyclesRef = useRef<number>(0);
 
 	// Load prizes + cross tab listener
 	useEffect(() => {
@@ -29,10 +42,7 @@ export default function Counter() {
 		};
 		loadPrizes();
 
-		const handlePrizeUpdate = (data: Prize[]) => {
-			setPrizes(data);
-		};
-
+		const handlePrizeUpdate = (data: Prize[]) => setPrizes(data);
 		crossTabBus.on('prize:updated', handlePrizeUpdate);
 		return () => crossTabBus.off('prize:updated', handlePrizeUpdate);
 	}, []);
@@ -45,32 +55,22 @@ export default function Counter() {
 			const winners = localStorage.getItem('doorprize.winners');
 			if (winners) {
 				const parsedWinners = JSON.parse(winners) as Winners[];
-				const pesertaIds = parsedWinners.map(winner => winner.id);
-				filteredPeserta = filteredPeserta.filter(p => !pesertaIds.includes(p.id));
+				filteredPeserta = filteredPeserta.filter(p => !parsedWinners.map(w => w.id).includes(p.id));
 			}
 
 			const dropWinners = localStorage.getItem('doorprize.drop-winners');
 			if (dropWinners) {
 				const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
-				const pesertaIds = parsedDropWinners.map(winner => winner.id);
-				filteredPeserta = filteredPeserta.filter(p => !pesertaIds.includes(p.id));
+				filteredPeserta = filteredPeserta.filter(p => !parsedDropWinners.map(w => w.id).includes(p.id));
 			}
 
 			setPeserta(filteredPeserta);
 		};
 
-		// Load dari localStorage saat pertama kali
 		const storedPeserta = localStorage.getItem('doorprize.peserta');
-		if (storedPeserta) {
-			const parsed = JSON.parse(storedPeserta) as Peserta[];
-			rebuildPeserta(parsed);
-		}
+		if (storedPeserta) rebuildPeserta(JSON.parse(storedPeserta) as Peserta[]);
 
-		// Listen ke event dari table-peserta
-		const onPesertaUpdated = (data: Peserta[]) => {
-			rebuildPeserta(data);
-		};
-
+		const onPesertaUpdated = (data: Peserta[]) => rebuildPeserta(data);
 		crossTabBus.on('peserta:updated', onPesertaUpdated);
 		return () => crossTabBus.off('peserta:updated', onPesertaUpdated);
 	}, []);
@@ -80,7 +80,6 @@ export default function Counter() {
 		const rebuildPesertaFromWinners = (updatedWinners: Winners[], updatedDrops: Winners[]) => {
 			const storedPeserta = localStorage.getItem('doorprize.peserta');
 			const allPeserta: Peserta[] = storedPeserta ? JSON.parse(storedPeserta) : [];
-
 			const winnerIds = new Set(updatedWinners.map(w => w.id));
 			const dropIds = new Set(updatedDrops.map(w => w.id));
 			setPeserta(allPeserta.filter(p => !winnerIds.has(p.id) && !dropIds.has(p.id)));
@@ -88,14 +87,12 @@ export default function Counter() {
 
 		const onWinnersUpdated = (updatedWinners: Winners[]) => {
 			const stored = localStorage.getItem('doorprize.drop-winners');
-			const drops: Winners[] = stored ? JSON.parse(stored) : [];
-			rebuildPesertaFromWinners(updatedWinners, drops);
+			rebuildPesertaFromWinners(updatedWinners, stored ? JSON.parse(stored) : []);
 		};
 
 		const onDropUpdated = (updatedDrops: Winners[]) => {
 			const stored = localStorage.getItem('doorprize.winners');
-			const wins: Winners[] = stored ? JSON.parse(stored) : [];
-			rebuildPesertaFromWinners(wins, updatedDrops);
+			rebuildPesertaFromWinners(stored ? JSON.parse(stored) : [], updatedDrops);
 		};
 
 		crossTabBus.on('winners:updated', onWinnersUpdated);
@@ -106,7 +103,7 @@ export default function Counter() {
 		};
 	}, []);
 
-	// Main interval effect (pengundian)
+	// Main interval effect — shuffle sekali, cycle berurutan, Stop aktif setelah minCycles putaran
 	useEffect(() => {
 		if (!isRun) {
 			if (random) {
@@ -118,6 +115,8 @@ export default function Counter() {
 		}
 
 		setTime(0);
+		setHasCompletedCycle(false);
+		completedCyclesRef.current = 0;
 
 		if (peserta.length === 0) {
 			setIsRun(false);
@@ -131,9 +130,22 @@ export default function Counter() {
 			return;
 		}
 
+		shuffledRef.current = shuffleArray([...peserta]);
+		cycleIndexRef.current = 0;
+
 		const intervalId = setInterval(() => {
-			const randomIndex = getSafeRandomIndex(peserta.length);
-			setRandomPeserta(peserta[randomIndex]);
+			const idx = cycleIndexRef.current;
+			setRandomPeserta(shuffledRef.current[idx]);
+
+			const nextIndex = (idx + 1) % shuffledRef.current.length;
+			cycleIndexRef.current = nextIndex;
+
+			if (nextIndex === 0) {
+				completedCyclesRef.current += 1;
+				if (completedCyclesRef.current >= minCycles) {
+					setHasCompletedCycle(true);
+				}
+			}
 		}, intervalTime);
 
 		const timerId = setInterval(() => {
@@ -146,25 +158,19 @@ export default function Counter() {
 			clearInterval(intervalId);
 			clearInterval(timerId);
 		};
-	}, [isRun, currentPrize, peserta]);
+	}, [isRun, currentPrize, peserta, minCycles]);
 
 	const reloadWinners = (type: "win" | "drop") => {
 		const winners = localStorage.getItem('doorprize.winners');
-		if (winners) {
-			const parsedWinners = JSON.parse(winners) as Winners[];
-			crossTabBus.emit('winners:updated', parsedWinners);
-		}
+		if (winners) crossTabBus.emit('winners:updated', JSON.parse(winners) as Winners[]);
 
 		const dropWinners = localStorage.getItem('doorprize.drop-winners');
-		if (dropWinners) {
-			const parsedDropWinners = JSON.parse(dropWinners) as Winners[];
-			crossTabBus.emit('dropWinners:updated', parsedDropWinners);
-		}
+		if (dropWinners) crossTabBus.emit('dropWinners:updated', JSON.parse(dropWinners) as Winners[]);
 
-		if (type === "win") {
-			setCurrentPrize("");
-		}
+		if (type === "win") setCurrentPrize("");
 	};
+
+	const canStop = isRun && hasCompletedCycle;
 
 	return (
 		<div className="grid items-center justify-items-center min-h-screen p-0 m-0">
@@ -179,16 +185,12 @@ export default function Counter() {
 				<div className="mt-2 border border-dashed border-yellow-500 px-10 py-2 rounded-lg text-center">
 					<select
 						className="text-white text-center p-2 rounded bg-black appearance-none text-3xl font-bold uppercase"
-						onChange={(e) => {
-							setCurrentPrize(e.target.value);
-						}}
+						onChange={(e) => setCurrentPrize(e.target.value)}
 						value={currentPrize}
 					>
 						<option value="">-- Pilih Hadiah --</option>
 						{prizes.map((prize, index) => (
-							<option key={index} value={prize.name}>
-								{prize.name}
-							</option>
+							<option key={index} value={prize.name}>{prize.name}</option>
 						))}
 					</select>
 				</div>
@@ -196,9 +198,11 @@ export default function Counter() {
 
 			<main className="w-full">
 				<div className="w-full text-center text-white">
-					{!isRun && <div className="flex flex-col items-center justify-center gap-4">
-						<p className="text-xl text-white">Ready...</p>
-					</div>}
+					{!isRun && (
+						<div className="flex flex-col items-center justify-center gap-4">
+							<p className="text-xl text-white">Ready...</p>
+						</div>
+					)}
 					{isRun && (
 						<div>
 							<div className="text-5xl font-bold text-yellow-600 mt-5">{randomPeserta.id}</div>
@@ -214,34 +218,42 @@ export default function Counter() {
 					<b className="mx-2 text-2xl text-white"> {(time / 1000).toFixed(2)} </b> Detik
 				</div>
 				<div className="flex justify-center w-full">
-					<button
-						onClick={() => setIsRun(!isRun)}
-						className={`${isRun ? `bg-red-500` : `bg-blue-500`} px-12 hover:cursor-pointer py-4 text-white text-4xl font-bold rounded-full w-fit ${
-							isRun && (time / 1000) < minStopTime ? "hidden" : ""
-						}`}
-					>
-						{isRun ? (
-							<span>Stop <span className="ml-2">⏹️</span></span>
-						) : (
-							<span>Play <span className="ml-2">▶️</span></span>
-						)}
-					</button>
+					{!isRun && (
+						<button
+							onClick={() => setIsRun(true)}
+							className="bg-blue-500 px-12 hover:cursor-pointer py-4 text-white text-4xl font-bold rounded-full w-fit"
+						>
+							Play <span className="ml-2">▶️</span>
+						</button>
+					)}
+					{isRun && (
+						<button
+							onClick={() => canStop && setIsRun(false)}
+							className={`px-12 py-4 text-white text-4xl font-bold rounded-full w-fit transition-all duration-300 ${
+								canStop
+									? 'bg-red-500 hover:cursor-pointer'
+									: 'bg-gray-500 cursor-not-allowed opacity-50'
+							}`}
+							disabled={!canStop}
+						>
+							Stop <span className="ml-2">⏹️</span>
+						</button>
+					)}
 				</div>
 				<div className="text-center text-white mt-15 flex flex-row items-center justify-center gap-10">
 					<Link href="/hadiah" className="hover:underline" target="_blank">
 						⚙️ Pilihan Hadiah
 					</Link>
 					<div className="flex items-center">
-						<label className="text-xl text-white mr-2">Min Play Time:</label>
+						<label className="text-xl text-white mr-2">Min Cycle:</label>
 						<select
-							className="text-white p-2 rounded bg-gray-400"
-							onChange={(e) => setMinStopTime(Number(e.target.value))}
-							value={minStopTime}
+							className="text-white p-2 rounded bg-gray-400 disabled:opacity-50"
+							onChange={(e) => setMinCycles(Number(e.target.value))}
+							value={minCycles}
+							disabled={isRun}
 						>
 							{[1, 2, 3, 4, 5].map((num) => (
-								<option key={num} value={num}>
-									{num}
-								</option>
+								<option key={num} value={num}>{num}x</option>
 							))}
 						</select>
 					</div>
