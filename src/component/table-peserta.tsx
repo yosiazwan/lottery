@@ -32,8 +32,20 @@ export default function TablePeserta({
 		const jsonData = rows.slice(0).map(row => {
 			const [id, name] = row.split(",").map(item => item.replace(/"/g, ""));
 			return { id, name };
-		});
-		setPesertaData(jsonData); // Update the parent component with the new data
+		}).filter(item => item.id && item.name);
+
+		const existingIds = new Set(pesertaData.map(p => p.id));
+		const filteredData = jsonData.filter(item => !existingIds.has(item.id));
+
+		if (filteredData.length === 0) {
+			alert("Semua data sudah ada atau data kosong");
+			return;
+		}
+
+		const newData = [...pesertaData, ...filteredData];
+		setTableData(newData);
+		localStorage.setItem("doorprize.peserta", JSON.stringify(newData));
+		setPesertaData(newData);
 	};
 
 	const acakData = (data: any) => {
@@ -48,10 +60,13 @@ export default function TablePeserta({
 	};
 
 	const clearLocalStorage = () => {
-		localStorage.removeItem("doorprize.peserta");
-		setCsvData(""); // Clear the textarea
-		setTableData([]); // Clear the table data
-		setPesertaData([]); // Update the parent component with empty data
+		const confirmed = window.confirm("Apakah Anda yakin ingin menghapus semua data peserta?");
+		if (confirmed) {
+			localStorage.removeItem("doorprize.peserta");
+			setCsvData(""); // Clear the textarea
+			setTableData([]); // Clear the table data
+			setPesertaData([]); // Update the parent component with empty data
+		}
 	};
 
 	useEffect(() => {
