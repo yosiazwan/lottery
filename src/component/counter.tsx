@@ -5,6 +5,7 @@ import Fireworks from "./firework";
 import Link from "next/link";
 import { Prize } from "../app/hadiah/page";
 import { crossTabBus } from "@/libs/crossTabEvent";
+import { getSafeRandomIndex } from "@/libs/number";
 import { Peserta, Winners } from "@/libs/type";
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -15,6 +16,8 @@ function shuffleArray<T>(array: T[]): T[] {
 	}
 	return arr;
 }
+
+type DrawMethod = 'random' | 'cycle';
 
 export default function Counter() {
 	const intervalTime = 10;
@@ -27,8 +30,16 @@ export default function Counter() {
 	const [showFramework, setShowFramework] = useState<boolean>(false);
 	const [prizes, setPrizes] = useState<Prize[]>([]);
 	const [currentPrize, setCurrentPrize] = useState<string>('');
+
+	// Method selector
+	const [drawMethod, setDrawMethod] = useState<DrawMethod>('cycle');
+
+	// Cycle-only states
 	const [hasCompletedCycle, setHasCompletedCycle] = useState<boolean>(false);
 	const [minCycles, setMinCycles] = useState<number>(2);
+
+	// Random-only state
+	const [minStopTime, setMinStopTime] = useState<number>(2);
 
 	const cycleIndexRef = useRef<number>(0);
 	const shuffledRef = useRef<Peserta[]>([]);
@@ -103,7 +114,7 @@ export default function Counter() {
 		};
 	}, []);
 
-	// Main interval effect — shuffle sekali, cycle berurutan, Stop aktif setelah minCycles putaran
+	// Main interval effect
 	useEffect(() => {
 		if (!isRun) {
 			if (random) {
@@ -130,23 +141,34 @@ export default function Counter() {
 			return;
 		}
 
-		shuffledRef.current = shuffleArray([...peserta]);
-		cycleIndexRef.current = 0;
+		let intervalId: NodeJS.Timeout;
 
-		const intervalId = setInterval(() => {
-			const idx = cycleIndexRef.current;
-			setRandomPeserta(shuffledRef.current[idx]);
+		if (drawMethod === 'cycle') {
+			// Cycle mode: shuffle sekali, putar berurutan
+			shuffledRef.current = shuffleArray([...peserta]);
+			cycleIndexRef.current = 0;
 
-			const nextIndex = (idx + 1) % shuffledRef.current.length;
-			cycleIndexRef.current = nextIndex;
+			intervalId = setInterval(() => {
+				const idx = cycleIndexRef.current;
+				setRandomPeserta(shuffledRef.current[idx]);
 
-			if (nextIndex === 0) {
-				completedCyclesRef.current += 1;
-				if (completedCyclesRef.current >= minCycles) {
-					setHasCompletedCycle(true);
+				const nextIndex = (idx + 1) % shuffledRef.current.length;
+				cycleIndexRef.current = nextIndex;
+
+				if (nextIndex === 0) {
+					completedCyclesRef.current += 1;
+					if (completedCyclesRef.current >= minCycles) {
+						setHasCompletedCycle(true);
+					}
 				}
-			}
-		}, intervalTime);
+			}, intervalTime);
+		} else {
+			// Random mode: acak setiap tick
+			intervalId = setInterval(() => {
+				const randomIndex = getSafeRandomIndex(peserta.length);
+				setRandomPeserta(peserta[randomIndex]);
+			}, intervalTime);
+		}
 
 		const timerId = setInterval(() => {
 			setTime(prev => prev + intervalTime);
@@ -158,7 +180,7 @@ export default function Counter() {
 			clearInterval(intervalId);
 			clearInterval(timerId);
 		};
-	}, [isRun, currentPrize, peserta, minCycles]);
+	}, [isRun, currentPrize, peserta, drawMethod, minCycles]);
 
 	const reloadWinners = (type: "win" | "drop") => {
 		const winners = localStorage.getItem('doorprize.winners');
@@ -170,7 +192,12 @@ export default function Counter() {
 		if (type === "win") setCurrentPrize("");
 	};
 
-	const canStop = isRun && hasCompletedCycle;
+	// Kondisi boleh stop
+	const canStop = isRun && (
+		drawMethod === 'random'
+			? (time / 1000) >= minStopTime
+			: hasCompletedCycle
+	);
 
 	return (
 		<div className="grid items-center justify-items-center min-h-screen p-0 m-0">
@@ -240,23 +267,73 @@ export default function Counter() {
 						</button>
 					)}
 				</div>
-				<div className="text-center text-white mt-15 flex flex-row items-center justify-center gap-10">
+
+				{/* Settings row */}
+				<div className="text-center text-white mt-6 flex flex-row items-center justify-center gap-8 flex-wrap">
 					<Link href="/hadiah" className="hover:underline" target="_blank">
 						⚙️ Pilihan Hadiah
 					</Link>
-					<div className="flex items-center">
-						<label className="text-xl text-white mr-2">Min Cycle:</label>
-						<select
-							className="text-white p-2 rounded bg-gray-400 disabled:opacity-50"
-							onChange={(e) => setMinCycles(Number(e.target.value))}
-							value={minCycles}
-							disabled={isRun}
-						>
-							{[1, 2, 3, 4, 5].map((num) => (
-								<option key={num} value={num}>{num}x</option>
-							))}
-						</select>
+
+					{/* Method selector */}
+					<div className="flex items-center gap-2">
+						<div className="flex rounded-lg overflow-hidden border border-gray-500">
+							<button
+								onClick={() => !isRun && setDrawMethod('random')}
+								disabled={isRun}
+								className={`px-4 py-2 text-lg font-semibold transition-all ${
+									drawMethod === 'random'
+										? 'bg-yellow-500 text-black'
+										: 'bg-gray-700 text-white hover:bg-gray-600'
+								} disabled:opacity-50 disabled:cursor-not-allowed`}
+							>
+								🎲 Random
+							</button>
+							<button
+								onClick={() => !isRun && setDrawMethod('cycle')}
+								disabled={isRun}
+								className={`px-4 py-2 text-lg font-semibold transition-all ${
+									drawMethod === 'cycle'
+										? 'bg-yellow-500 text-black'
+										: 'bg-gray-700 text-white hover:bg-gray-600'
+								} disabled:opacity-50 disabled:cursor-not-allowed`}
+							>
+								🎡 Cycle Roda
+							</button>
+						</div>
 					</div>
+
+					{/* Conditional settings per method */}
+					{drawMethod === 'random' && (
+						<div className="flex items-center gap-2">
+							<label className="text-xl text-white">Min Play Time:</label>
+							<select
+								className="text-white p-2 rounded bg-gray-400 disabled:opacity-50"
+								onChange={(e) => setMinStopTime(Number(e.target.value))}
+								value={minStopTime}
+								disabled={isRun}
+							>
+								{[1, 2, 3, 4, 5].map((num) => (
+									<option key={num} value={num}>{num}s</option>
+								))}
+							</select>
+						</div>
+					)}
+
+					{drawMethod === 'cycle' && (
+						<div className="flex items-center gap-2">
+							<label className="text-xl text-white">Min Cycle:</label>
+							<select
+								className="text-white p-2 rounded bg-gray-400 disabled:opacity-50"
+								onChange={(e) => setMinCycles(Number(e.target.value))}
+								value={minCycles}
+								disabled={isRun}
+							>
+								{[1, 2, 3, 4, 5].map((num) => (
+									<option key={num} value={num}>{num}x</option>
+								))}
+							</select>
+						</div>
+					)}
 				</div>
 			</footer>
 
