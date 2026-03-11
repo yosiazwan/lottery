@@ -94,19 +94,19 @@ export default function TablePeserta({
 				/>
 				<button
 					onClick={saveToLocalStorage}
-					className="px-4 py-2 hover:cursor-pointer bg-blue-500 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					className="px-2 py-1 hover:cursor-pointer bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>
 					Save Data
 				</button>
 				<button
 					onClick={clearLocalStorage}
-					className="ml-2 px-4 py-2 hover: cursor-pointer bg-red-500 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+					className="ml-2 px-2 py-1 hover: cursor-pointer bg-red-500 text-white text-xs rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
 				>
 					Clear Data
 				</button>
 				<button
 					onClick={() => { acakData(pesertaData); }}
-					className="ml-2 px-4 py-2 hover: cursor-pointer bg-purple-500 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+					className="ml-2 px-2 py-1 hover: cursor-pointer bg-purple-500 text-white text-xs rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
 				>
 					Acak Data
 				</button>

@@ -143,7 +143,7 @@ export default function Counter({
                     <span className="mr-2">🎁</span> DoorPrize
                 </h1>
                 <div className="w-full text-center mt-10 text-4xl text-white">Jumlah Peserta: <b>{peserta.length}</b></div>
-                <div className="mt-10 text-2xl font-bold text-yellow-400">Undian Hadiah</div>
+                <div className="mt-10 text-2xl font-bold text-yellow-400">Hadiah Yang Diundi</div>
                 <div className="mt-2 border border-dashed border-yellow-500 px-10 py-2 rounded-lg text-center">
                     <select
                         className="text-white text-center p-2 rounded bg-black appearance-none text-3xl font-bold uppercase"
@@ -152,7 +152,7 @@ export default function Counter({
                         }}
                         value={currentPrize}
                     >
-                        <option value="">-- Pilih Undian --</option>
+                        <option value="">-- Pilih Hadiah --</option>
                         {prizes.map((prize, index) => (
                             <option key={index} value={prize.name}>{prize.name}</option>
                         ))}
