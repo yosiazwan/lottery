@@ -47,6 +47,14 @@ export default function Counter() {
 
 	const effectiveMethod: DrawMethod = winnerCount > 1 ? 'random' : drawMethod;
 
+	// Computed: prize yang dipilih saat ini
+	const selectedPrize = prizes.find(p => p.name === currentPrize);
+	const usedCount = winnerCountPerPrize[currentPrize] ?? 0;
+	const remainingQuota = selectedPrize?.maxWinners
+		? selectedPrize.maxWinners - usedCount
+		: peserta.length;
+	const maxWinnerInput = Math.min(peserta.length, remainingQuota);
+
 	// Filter prizes yang belum penuh
 	const availablePrizes = prizes.filter(p => {
 		const used = winnerCountPerPrize[p.name] ?? 0;
@@ -61,6 +69,16 @@ export default function Counter() {
 	useEffect(() => {
 		if (currentPrize !== '') currentPrizeRef.current = currentPrize;
 	}, [currentPrize]);
+
+	// Auto-sesuaikan winnerCount saat prize atau kuota berubah
+	useEffect(() => {
+		if (!currentPrize) return;
+		const prize = prizes.find(p => p.name === currentPrize);
+		if (!prize?.maxWinners) return;
+		const used = winnerCountPerPrize[currentPrize] ?? 0;
+		const remaining = prize.maxWinners - used;
+		if (winnerCount > remaining) setWinnerCount(Math.max(1, remaining));
+	}, [currentPrize, prizes, winnerCountPerPrize]);
 
 	useEffect(() => {
 		const loadPrizes = () => {
@@ -270,22 +288,27 @@ export default function Counter() {
 						})}
 					</select>
 				</div>
+
 				<div className="mt-4 flex items-center gap-3 flex-wrap justify-center">
 					<label className="text-lg lg:text-xl text-yellow-400 font-bold">Jumlah Pemenang:</label>
 					<input
 						type="number"
 						min={1}
-						max={peserta.length || 1}
+						max={maxWinnerInput || 1}
 						value={winnerCount}
 						disabled={isRun}
 						onChange={(e) => {
-							const val = Math.max(1, parseInt(e.target.value) || 1);
+							const val = Math.min(
+								maxWinnerInput || 1,
+								Math.max(1, parseInt(e.target.value) || 1)
+							);
 							setWinnerCount(val);
 						}}
 						className="w-16 lg:w-20 text-center text-xl lg:text-2xl font-bold text-white bg-black border border-yellow-500 rounded-lg p-2 disabled:opacity-50"
 					/>
 					<span className="text-gray-400 text-base lg:text-lg">orang</span>
 				</div>
+
 				{winnerCount > 1 && (
 					<div className="mt-2 text-xs lg:text-sm text-gray-400 italic">
 						🎲 Multi-pemenang otomatis menggunakan metode Random
