@@ -342,10 +342,20 @@ export default function Counter() {
                 )}
 
                 {effectiveMethod === 'random' && (
-                    <div className="flex items-center gap-2 text-gray-400 text-xs lg:text-sm italic">
-                        ⏱ Min: {minStopTime}s
-                    </div>
-                )}
+										<div className="flex items-center gap-2">
+												<label className="text-white text-sm">Min Play:</label>
+												<select
+														className="text-white p-1 lg:p-2 rounded bg-gray-400 disabled:opacity-50 text-sm"
+														onChange={(e) => setMinStopTime(Number(e.target.value))}
+														value={minStopTime}
+														disabled={isRun}
+												>
+														{[1, 2, 3, 4, 5, 8, 10].map((num) => (
+																<option key={num} value={num}>{num}s</option>
+														))}
+												</select>
+										</div>
+								)}
 
                 {effectiveMethod === 'cycle' && (
                     <div className="flex items-center gap-2">
