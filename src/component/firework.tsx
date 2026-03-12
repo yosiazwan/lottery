@@ -266,6 +266,16 @@ export default function Fireworks({
 	const isMini = count > 16;
 	const allRevealed = revealedCount >= count;
 
+	const [screenSize, setScreenSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+
+	useEffect(() => {
+			const handleResize = () => setScreenSize({ w: window.innerWidth, h: window.innerHeight });
+			window.addEventListener('resize', handleResize);
+			return () => window.removeEventListener('resize', handleResize);
+	}, []);
+
+	const isSmall = screenSize.w <= 1280 || screenSize.h <= 720;
+
 	// Audio
 	useEffect(() => {
 		if (!isOpen || !fireworkAudio) return;
@@ -410,55 +420,76 @@ export default function Fireworks({
 	};
 
 	const WinnerCard = ({ w, index }: { w: Peserta; index: number }) => {
-		const isGugur = gugurSet.has(w.id);
-		const isVisible = index < revealedCount;
-		return (
-			<div
-				style={{
-					minWidth: isMini ? '120px' : '160px',
-					flex: '1 1 auto',
-					maxWidth: count === 1 ? '800px' : isMini ? '160px' : '220px',
-					opacity: isVisible ? 1 : 0,
-					transform: isVisible ? 'scale(1) translateY(0)' : 'scale(0.5) translateY(20px)',
-					transition: 'opacity 0.4s ease, transform 0.4s ease',
-				}}
-				className={`border border-dashed text-center ${isMini ? 'px-2 py-2 rounded-xl' : 'px-4 py-4 rounded-2xl'
-					} ${isGugur ? 'border-red-400 opacity-40' : 'border-yellow-300'}`}
-			>
-				<div className={`font-bold text-white leading-tight ${count === 1 ? 'text-7xl' : isMini ? 'text-sm' : 'text-2xl'}`}>{w.name}</div>
-				<div className={`text-gray-300 mt-1 ${count === 1 ? 'text-5xl' : isMini ? 'text-xs' : 'text-base'}`}>{w.id}</div>
-				<button
-					onClick={() => isGugur ? handleBatalGugur(w) : handleGugur(w)}
-					className={`rounded-lg font-semibold transition-all hover:cursor-pointer ${isMini ? 'mt-1 px-2 py-0.5 text-xs rounded' : 'mt-3 px-3 py-1 text-xs rounded-lg'
-						} ${isGugur ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-red-700 text-white hover:bg-red-600'}`}
-				>
-					{isGugur ? (isMini ? '↩' : '↩ Batal') : 'Gugur'}
-				</button>
-			</div>
-		);
-	};
+    const isGugur = gugurSet.has(w.id);
+    const isVisible = index < revealedCount;
+
+    const perRow = isMini ? 8 : 5;
+		const cardWidth = isMini
+				? (isSmall ? '90px' : '100px')
+				: `calc(${100 / perRow}vw - 16px)`;
+
+		const nameFontSize = count === 1
+				? (isSmall ? 'clamp(1.8rem, 5vw, 3.5rem)' : 'clamp(2rem, 5vw, 4rem)')
+				: count <= 2
+				? (isSmall ? 'clamp(1.3rem, 3vw, 2.2rem)' : 'clamp(1.5rem, 3.5vw, 2.8rem)')
+				: count <= 5
+				? (isSmall ? 'clamp(1rem, 2.2vw, 1.6rem)' : 'clamp(1.2rem, 2.5vw, 2rem)')
+				: count <= 10
+				? (isSmall ? 'clamp(0.85rem, 1.7vw, 1.3rem)' : 'clamp(1rem, 2vw, 1.6rem)')
+				: count <= 15
+				? (isSmall ? 'clamp(0.75rem, 1.4vw, 1.1rem)' : 'clamp(0.9rem, 1.7vw, 1.3rem)')
+				: (isSmall ? 'clamp(0.65rem, 1.2vw, 0.9rem)' : 'clamp(0.75rem, 1.4vw, 1.1rem)');
+
+		const idFontSize = count === 1
+				? (isSmall ? 'clamp(1.2rem, 3.5vw, 2.5rem)' : 'clamp(1.5rem, 4vw, 3rem)')
+				: count <= 5
+				? (isSmall ? 'clamp(0.85rem, 1.7vw, 1.3rem)' : 'clamp(1rem, 2vw, 1.6rem)')
+				: count <= 10
+				? (isSmall ? 'clamp(0.75rem, 1.4vw, 1.1rem)' : 'clamp(0.9rem, 1.6vw, 1.2rem)')
+				: (isSmall ? 'clamp(0.65rem, 1.1vw, 0.9rem)' : 'clamp(0.75rem, 1.2vw, 1rem)');
+
+    return (
+        <div
+            className={`border border-dashed text-center px-3 py-3 rounded-2xl
+								${isGugur ? 'border-red-400 opacity-40' : 'border-yellow-300'}`}
+						style={{
+								width: cardWidth,
+								flexShrink: 0,
+								opacity: isVisible ? 1 : 0,
+								transform: isVisible ? 'scale(1) translateY(0)' : 'scale(0.5) translateY(20px)',
+								transition: 'opacity 0.4s ease, transform 0.4s ease',
+								backgroundColor: 'rgba(0, 0, 0, .75)',
+						}}
+        >
+            <div style={{ fontSize: nameFontSize }} className="font-bold text-white leading-tight">
+                {w.name}
+            </div>
+            <div style={{ fontSize: idFontSize }} className="text-gray-200 mt-1">
+                {w.id}
+            </div>
+            <button
+                onClick={() => isGugur ? handleBatalGugur(w) : handleGugur(w)}
+                className={`mt-2 px-3 py-1 rounded-lg text-xs font-semibold transition-all hover:cursor-pointer
+                    ${isGugur ? 'bg-gray-600 text-white hover:bg-gray-500' : 'bg-red-700 text-white hover:bg-red-600'}`}
+            >
+                {isGugur ? '↩ Batal' : 'Gugur'}
+            </button>
+        </div>
+    );
+};
 
 	return (
 		<>
 			<div className={`${!open ? "hidden" : ""} fixed inset-0 z-[9999] overflow-hidden flex items-center justify-center h-screen`}>
 				<div className="absolute inset-0 flex flex-col items-center justify-center z-10 w-full h-full px-4 py-3">
-					<span className="text-7xl">🎉</span>
-					<div className={`${gFont.className} font-bold text-yellow-300 text-6xl mt-3 mb-6`}>
-						Selamat Kepada
+					<span className={isSmall ? "text-4xl" : "text-5xl"}>🎉</span>
+					<div className={`${gFont.className} font-bold text-yellow-300 ${isSmall ? 'text-3xl mt-2 mb-3' : 'text-4xl mt-2 mb-4'}`}>
+							Selamat Kepada
 					</div>
 
-					{!allRevealed && (
-						<div className="flex items-center gap-3 mb-4">
-							<span className="text-gray-400 text-sm">{revealedCount}/{count}</span>
-							<button onClick={revealAll} className="px-3 py-1 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-500 hover:cursor-pointer transition-all">
-								Tampilkan Semua
-							</button>
-						</div>
-					)}
-
 					<div
-						className={`flex flex-wrap justify-center w-screen px-4 ${isMini ? 'gap-2' : 'gap-3'}`}
-						style={isMini ? { maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' } : {}}
+							className="flex flex-wrap justify-center px-4 gap-3 w-screen"
+							style={{ maxHeight: isSmall ? 'calc(100dvh - 220px)' : 'calc(100dvh - 260px)', overflowY: 'auto' }}
 					>
 						{winners.map((w, i) => <WinnerCard key={w.id} w={w} index={i} />)}
 					</div>
@@ -467,18 +498,23 @@ export default function Fireworks({
 						style={{ opacity: allRevealed ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: allRevealed ? 'auto' : 'none' }}
 						className="flex flex-col items-center"
 					>
-						<div className={`${gFont.className} text-yellow-300 text-3xl mt-8`}>Mendapatkan Hadiah</div>
-						<div className="text-white uppercase text-5xl mt-2 mb-6">🎊 {prize} 🎊</div>
+						<div className={`${gFont.className} text-yellow-300 ${isSmall ? 'text-xl mt-3' : 'text-2xl mt-4'}`}>
+								Mendapatkan Hadiah
+						</div>
+						<div className={`text-white uppercase ${isSmall ? 'text-2xl mt-1 mb-3' : 'text-3xl mt-1 mb-4'}`}>
+								🎊 {prize} 🎊
+						</div>
 						<button
-							onClick={() => {
-								fireworkAudio?.pause();
-								if (fireworkAudio) fireworkAudio.currentTime = 0;
-								setOpen(false);
-								onClose?.();
-							}}
-							className={`bg-gray-700 text-white font-bold rounded-lg shadow-lg hover:cursor-pointer hover:bg-gray-600 transition-all ${isMini ? 'p-2 px-10 text-lg' : 'p-4 px-16 text-2xl'}`}
+								onClick={() => {
+										fireworkAudio?.pause();
+										if (fireworkAudio) fireworkAudio.currentTime = 0;
+										setOpen(false);
+										onClose?.();
+								}}
+								className={`bg-gray-700 text-white font-bold rounded-lg shadow-lg hover:cursor-pointer hover:bg-gray-600 transition-all
+										${isSmall ? 'p-2 px-10 text-lg' : 'p-3 px-12 text-xl'}`}
 						>
-							Tutup
+								Tutup
 						</button>
 					</div>
 				</div>
