@@ -32,6 +32,7 @@ export default function Counter() {
 	const [currentPrize, setCurrentPrize] = useState<string>('');
 	const [winners, setWinners] = useState<Peserta[]>([]);
 	const [winnerCount, setWinnerCount] = useState<number>(1);
+	const [winnerCountPerPrize, setWinnerCountPerPrize] = useState<Record<string, number>>({});
 
 	const [drawMethod, setDrawMethod] = useState<DrawMethod>('random');
 	const [hasCompletedCycle, setHasCompletedCycle] = useState<boolean>(false);
@@ -42,17 +43,21 @@ export default function Counter() {
 	const shuffledRef = useRef<Peserta[]>([]);
 	const completedCyclesRef = useRef<number>(0);
 	const pesertaRef = useRef<Peserta[]>([]);
-
-	// Ref untuk menyimpan prize agar tidak hilang saat currentPrize di-reset
 	const currentPrizeRef = useRef<string>('');
 
 	const effectiveMethod: DrawMethod = winnerCount > 1 ? 'random' : drawMethod;
+
+	// Filter prizes yang belum penuh
+	const availablePrizes = prizes.filter(p => {
+		const used = winnerCountPerPrize[p.name] ?? 0;
+		const max = p.maxWinners ?? Infinity;
+		return used < max;
+	});
 
 	useEffect(() => {
 		pesertaRef.current = peserta;
 	}, [peserta]);
 
-	// Update ref setiap currentPrize berubah (hanya jika tidak kosong)
 	useEffect(() => {
 		if (currentPrize !== '') currentPrizeRef.current = currentPrize;
 	}, [currentPrize]);
@@ -66,6 +71,21 @@ export default function Counter() {
 		const handlePrizeUpdate = (data: Prize[]) => setPrizes(data);
 		crossTabBus.on('prize:updated', handlePrizeUpdate);
 		return () => crossTabBus.off('prize:updated', handlePrizeUpdate);
+	}, []);
+
+	// Hitung pemenang per prize
+	useEffect(() => {
+		const rebuild = () => {
+			const stored = localStorage.getItem('doorprize.winners');
+			const data: Winners[] = stored ? JSON.parse(stored) : [];
+			const counts: Record<string, number> = {};
+			data.forEach(w => { counts[w.prize] = (counts[w.prize] ?? 0) + 1; });
+			setWinnerCountPerPrize(counts);
+		};
+		rebuild();
+		const onWinnersUpdated = () => rebuild();
+		crossTabBus.on('winners:updated', onWinnersUpdated);
+		return () => crossTabBus.off('winners:updated', onWinnersUpdated);
 	}, []);
 
 	useEffect(() => {
@@ -207,10 +227,8 @@ export default function Counter() {
 		if (storedWinners) crossTabBus.emit('winners:updated', JSON.parse(storedWinners) as Winners[]);
 		const dropWinners = localStorage.getItem('doorprize.drop-winners');
 		if (dropWinners) crossTabBus.emit('dropWinners:updated', JSON.parse(dropWinners) as Winners[]);
-		// Tidak reset currentPrize di sini — prize di-reset manual saat user tutup modal
 	};
 
-	// Reset prize dipanggil saat modal fireworks ditutup
 	const handleFireworksClose = () => {
 		setCurrentPrize('');
 		currentPrizeRef.current = '';
@@ -223,167 +241,173 @@ export default function Counter() {
 	);
 
 	return (
-    <div className="flex flex-col items-center min-h-screen py-6 px-4">
-        {/* Header */}
-        <div className="flex flex-col items-center w-full">
-            <h1 className="text-4xl lg:text-6xl font-bold text-yellow-300 flex items-center">
-                <img src="/favicon.ico" alt="DoorPrize" className="w-10 h-10 lg:w-14 lg:h-14 mr-3" />
-                DoorPrize
-            </h1>
-            <div className="w-full text-center mt-4 text-2xl lg:text-4xl text-white">
-                Jumlah Peserta: <b>{peserta.length}</b>
-            </div>
-            <div className="mt-4 text-lg lg:text-2xl font-bold text-yellow-400">Hadiah Yang Diundi</div>
-            <div className="mt-2 border border-dashed border-yellow-500 px-6 py-2 rounded-lg text-center">
-                <select
-                    className="text-white text-center p-2 rounded bg-black appearance-none text-xl lg:text-3xl font-bold uppercase"
-                    onChange={(e) => setCurrentPrize(e.target.value)}
-                    value={currentPrize}
-                >
-                    <option value="">-- Pilih Hadiah --</option>
-                    {prizes.map((prize, index) => (
-                        <option key={index} value={prize.name}>{prize.name}</option>
-                    ))}
-                </select>
-            </div>
-            <div className="mt-4 flex items-center gap-3 flex-wrap justify-center">
-                <label className="text-lg lg:text-xl text-yellow-400 font-bold">Jumlah Pemenang:</label>
-                <input
-                    type="number"
-                    min={1}
-                    max={peserta.length || 1}
-                    value={winnerCount}
-                    disabled={isRun}
-                    onChange={(e) => {
-                        const val = Math.max(1, parseInt(e.target.value) || 1);
-                        setWinnerCount(val);
-                    }}
-                    className="w-16 lg:w-20 text-center text-xl lg:text-2xl font-bold text-white bg-black border border-yellow-500 rounded-lg p-2 disabled:opacity-50"
-                />
-                <span className="text-gray-400 text-base lg:text-lg">orang</span>
-            </div>
-            {winnerCount > 1 && (
-                <div className="mt-2 text-xs lg:text-sm text-gray-400 italic">
-                    🎲 Multi-pemenang otomatis menggunakan metode Random
-                </div>
-            )}
-        </div>
+		<div className="flex flex-col items-center min-h-screen py-6 px-4">
+			{/* Header */}
+			<div className="flex flex-col items-center w-full">
+				<h1 className="text-4xl lg:text-6xl font-bold text-yellow-300 flex items-center">
+					<img src="/favicon.ico" alt="DoorPrize" className="w-10 h-10 lg:w-14 lg:h-14 mr-3" />
+					DoorPrize
+				</h1>
+				<div className="w-full text-center mt-4 text-2xl lg:text-4xl text-white">
+					Jumlah Peserta: <b>{peserta.length}</b>
+				</div>
+				<div className="mt-4 text-lg lg:text-2xl font-bold text-yellow-400">Hadiah Yang Diundi</div>
+				<div className="mt-2 border border-dashed border-yellow-500 px-6 py-2 rounded-lg text-center">
+					<select
+						className="text-white text-center p-2 rounded bg-black appearance-none text-xl lg:text-3xl font-bold uppercase"
+						onChange={(e) => setCurrentPrize(e.target.value)}
+						value={currentPrize}
+					>
+						<option value="">-- Pilih Hadiah --</option>
+						{availablePrizes.map((prize, index) => {
+							const used = winnerCountPerPrize[prize.name] ?? 0;
+							const max = prize.maxWinners ?? '∞';
+							return (
+								<option key={index} value={prize.name}>
+									{prize.name} ({used}/{max})
+								</option>
+							);
+						})}
+					</select>
+				</div>
+				<div className="mt-4 flex items-center gap-3 flex-wrap justify-center">
+					<label className="text-lg lg:text-xl text-yellow-400 font-bold">Jumlah Pemenang:</label>
+					<input
+						type="number"
+						min={1}
+						max={peserta.length || 1}
+						value={winnerCount}
+						disabled={isRun}
+						onChange={(e) => {
+							const val = Math.max(1, parseInt(e.target.value) || 1);
+							setWinnerCount(val);
+						}}
+						className="w-16 lg:w-20 text-center text-xl lg:text-2xl font-bold text-white bg-black border border-yellow-500 rounded-lg p-2 disabled:opacity-50"
+					/>
+					<span className="text-gray-400 text-base lg:text-lg">orang</span>
+				</div>
+				{winnerCount > 1 && (
+					<div className="mt-2 text-xs lg:text-sm text-gray-400 italic">
+						🎲 Multi-pemenang otomatis menggunakan metode Random
+					</div>
+				)}
+			</div>
 
-        {/* Main — nama peserta */}
-        <div className="flex-1 flex items-center justify-center w-full my-4">
-            <div className="w-full text-center text-white">
-                {!isRun && (
-                    <p className="text-lg lg:text-xl text-white">Ready...</p>
-                )}
-                {isRun && (
-                    <div>
-                        <div className="text-3xl lg:text-5xl font-bold text-yellow-600">{randomPeserta.id}</div>
-                        <div className="text-3xl lg:text-5xl font-bold text-yellow-300 mt-2">{randomPeserta.name}</div>
-                    </div>
-                )}
-            </div>
-        </div>
+			{/* Main — nama peserta */}
+			<div className="flex-1 flex items-center justify-center w-full my-4">
+				<div className="w-full text-center text-white">
+					{!isRun && (
+						<p className="text-lg lg:text-xl text-white">Ready...</p>
+					)}
+					{isRun && (
+						<div>
+							<div className="text-3xl lg:text-5xl font-bold text-yellow-600">{randomPeserta.id}</div>
+							<div className="text-3xl lg:text-5xl font-bold text-yellow-300 mt-2">{randomPeserta.name}</div>
+						</div>
+					)}
+				</div>
+			</div>
 
-        {/* Footer */}
-        <div className="w-full flex flex-col items-center gap-4">
-            <div className="text-lg lg:text-xl text-white">
-                Play Time: <b className="mx-2 text-xl lg:text-2xl text-white">{(time / 1000).toFixed(2)}</b> Detik
-            </div>
-            <div className="flex justify-center w-full">
-                {!isRun && (
-                    <button
-                        onClick={() => setIsRun(true)}
-                        className="bg-blue-500 px-8 lg:px-12 hover:cursor-pointer py-3 lg:py-4 text-white text-2xl lg:text-4xl font-bold rounded-full w-fit"
-                    >
-                        Play <span className="ml-2">▶️</span>
-                    </button>
-                )}
-                {isRun && (
-                    <button
-                        onClick={handleStop}
-                        className={`px-8 lg:px-12 py-3 lg:py-4 text-white text-2xl lg:text-4xl font-bold rounded-full w-fit transition-all duration-300 ${
-                            canStop ? 'bg-red-500 hover:cursor-pointer' : 'bg-gray-500 cursor-not-allowed opacity-50'
-                        }`}
-                        disabled={!canStop}
-                    >
-                        Stop <span className="ml-2">⏹️</span>
-                    </button>
-                )}
-            </div>
+			{/* Footer */}
+			<div className="w-full flex flex-col items-center gap-4">
+				<div className="text-lg lg:text-xl text-white">
+					Play Time: <b className="mx-2 text-xl lg:text-2xl text-white">{(time / 1000).toFixed(2)}</b> Detik
+				</div>
+				<div className="flex justify-center w-full">
+					{!isRun && (
+						<button
+							onClick={() => setIsRun(true)}
+							className="bg-blue-500 px-8 lg:px-12 hover:cursor-pointer py-3 lg:py-4 text-white text-2xl lg:text-4xl font-bold rounded-full w-fit"
+						>
+							Play <span className="ml-2">▶️</span>
+						</button>
+					)}
+					{isRun && (
+						<button
+							onClick={handleStop}
+							className={`px-8 lg:px-12 py-3 lg:py-4 text-white text-2xl lg:text-4xl font-bold rounded-full w-fit transition-all duration-300 ${
+								canStop ? 'bg-red-500 hover:cursor-pointer' : 'bg-gray-500 cursor-not-allowed opacity-50'
+							}`}
+							disabled={!canStop}
+						>
+							Stop <span className="ml-2">⏹️</span>
+						</button>
+					)}
+				</div>
 
-            <div className="text-center text-white flex flex-row items-center justify-center gap-4 lg:gap-8 flex-wrap text-sm lg:text-base">
-                <Link href="/hadiah" className="hover:underline" target="_blank">
-                    ⚙️ Pilihan Hadiah
-                </Link>
+				<div className="text-center text-white flex flex-row items-center justify-center gap-4 lg:gap-8 flex-wrap text-sm lg:text-base">
+					<Link href="/hadiah" className="hover:underline" target="_blank">
+						⚙️ Pilihan Hadiah
+					</Link>
 
-                {winnerCount === 1 && (
-                    <div className="flex items-center gap-2">
-                        <div className="flex rounded-lg overflow-hidden border border-gray-500">
-                            <button
-                                onClick={() => !isRun && setDrawMethod('random')}
-                                disabled={isRun}
-                                className={`px-3 lg:px-4 py-2 text-sm lg:text-lg font-semibold transition-all ${
-                                    drawMethod === 'random' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                                🎲 Random
-                            </button>
-                            <button
-                                onClick={() => !isRun && setDrawMethod('cycle')}
-                                disabled={isRun}
-                                className={`px-3 lg:px-4 py-2 text-sm lg:text-lg font-semibold transition-all ${
-                                    drawMethod === 'cycle' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                                🎡 Cycle
-                            </button>
-                        </div>
-                    </div>
-                )}
+					{winnerCount === 1 && (
+						<div className="flex items-center gap-2">
+							<div className="flex rounded-lg overflow-hidden border border-gray-500">
+								<button
+									onClick={() => !isRun && setDrawMethod('random')}
+									disabled={isRun}
+									className={`px-3 lg:px-4 py-2 text-sm lg:text-lg font-semibold transition-all ${
+										drawMethod === 'random' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'
+									} disabled:opacity-50 disabled:cursor-not-allowed`}
+								>
+									🎲 Random
+								</button>
+								<button
+									onClick={() => !isRun && setDrawMethod('cycle')}
+									disabled={isRun}
+									className={`px-3 lg:px-4 py-2 text-sm lg:text-lg font-semibold transition-all ${
+										drawMethod === 'cycle' ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white hover:bg-gray-600'
+									} disabled:opacity-50 disabled:cursor-not-allowed`}
+								>
+									🎡 Cycle
+								</button>
+							</div>
+						</div>
+					)}
 
-                {effectiveMethod === 'random' && (
-										<div className="flex items-center gap-2">
-												<label className="text-white text-sm">Min Play:</label>
-												<select
-														className="text-white p-1 lg:p-2 rounded bg-gray-400 disabled:opacity-50 text-sm"
-														onChange={(e) => setMinStopTime(Number(e.target.value))}
-														value={minStopTime}
-														disabled={isRun}
-												>
-														{[1, 2, 3, 4, 5, 8, 10].map((num) => (
-																<option key={num} value={num}>{num}s</option>
-														))}
-												</select>
-										</div>
-								)}
+					{effectiveMethod === 'random' && (
+						<div className="flex items-center gap-2">
+							<label className="text-white text-sm">Min Play:</label>
+							<select
+								className="text-white p-1 lg:p-2 rounded bg-gray-400 disabled:opacity-50 text-sm"
+								onChange={(e) => setMinStopTime(Number(e.target.value))}
+								value={minStopTime}
+								disabled={isRun}
+							>
+								{[1, 2, 3, 4, 5, 8, 10].map((num) => (
+									<option key={num} value={num}>{num}s</option>
+								))}
+							</select>
+						</div>
+					)}
 
-                {effectiveMethod === 'cycle' && (
-                    <div className="flex items-center gap-2">
-                        <label className="text-white text-sm">Min Cycle:</label>
-                        <select
-                            className="text-white p-1 lg:p-2 rounded bg-gray-400 disabled:opacity-50 text-sm"
-                            onChange={(e) => setMinCycles(Number(e.target.value))}
-                            value={minCycles}
-                            disabled={isRun}
-                        >
-                            {[1, 2, 3, 4, 5].map((num) => (
-                                <option key={num} value={num}>{num}x</option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-            </div>
-        </div>
+					{effectiveMethod === 'cycle' && (
+						<div className="flex items-center gap-2">
+							<label className="text-white text-sm">Min Cycle:</label>
+							<select
+								className="text-white p-1 lg:p-2 rounded bg-gray-400 disabled:opacity-50 text-sm"
+								onChange={(e) => setMinCycles(Number(e.target.value))}
+								value={minCycles}
+								disabled={isRun}
+							>
+								{[1, 2, 3, 4, 5].map((num) => (
+									<option key={num} value={num}>{num}x</option>
+								))}
+							</select>
+						</div>
+					)}
+				</div>
+			</div>
 
-        {!isRun && time > 0 && winners.length > 0 && (
-            <Fireworks
-                isOpen={showFramework}
-                winners={winners}
-                reload={reloadWinners}
-                onClose={handleFireworksClose}
-                prize={currentPrizeRef.current}
-            />
-        )}
-    </div>
-);
+			{!isRun && time > 0 && winners.length > 0 && (
+				<Fireworks
+					isOpen={showFramework}
+					winners={winners}
+					reload={reloadWinners}
+					onClose={handleFireworksClose}
+					prize={currentPrizeRef.current}
+				/>
+			)}
+		</div>
+	);
 }
